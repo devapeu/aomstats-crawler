@@ -4,6 +4,20 @@ const fs = require('fs'); // Or use DB write instead
 const app = express();
 const PORT = 3000;
 
+const PLAYERS = [
+  '1074827715',
+  '1074199836',
+  '1073862520',
+  '1074875183',
+  '1074196830',
+  '1074910820',
+  '1075027222',
+  '1074849746',
+  '1074203172',
+  '1074839111',
+  '1075268390'
+]
+
 app.get('/fetch/:profileId', async (req, res) => {
   const { profileId } = req.params;
   const matches = await crawlPlayerMatches(profileId);
@@ -12,6 +26,26 @@ app.get('/fetch/:profileId', async (req, res) => {
   fs.writeFileSync(`matches_${profileId}.json`, JSON.stringify(matches, null, 2));
   
   res.send(`Fetched ${matches.length} matches for profile ${profileId}`);
+});
+
+app.get('/fetch-all', async(req, res) => {
+  const seen = new Set();
+  const allMatches = [];
+
+  for (const p of PLAYERS) {
+    const playerMatches = await crawlPlayerMatches(p);
+    
+    for (const match of playerMatches) {
+      const key = `${match.match_id}-${match.profile_id}`;
+      if (!seen.has(key)){
+        seen.add(key);
+        allMatches.push(match);
+      }
+    }
+  }
+
+  fs.writeFileSync(`all_matches.json`, JSON.stringify(allMatches, null, 2));
+  res.send("Finished fetching all matches! Whew!");
 });
 
 app.listen(PORT, () => {

@@ -18,21 +18,24 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
 
-async function crawlPlayerMatches(profileId, leaderboard = 0) {
+async function crawlPlayerMatches(profileId) {
   const allMatches = [];
-  //const limit = 60;
+  let before = Math.floor(Date.now() / 1000); // start now
+  const limit = 60; // assumed
 
-  const today = Math.floor(Date.now() / 1000);
-  const increment = 259200; // 3 days
-
-  for (let start = today; ; start += increment) {
-    const url = `https://aomstats.io/api/profile/${profileId}/matches?leaderboard=${leaderboard}&before=${start}`;
-    const res = await axios.get(url);
-    const matches = res.data;
+  while (true) {
+    const url = `https://aomstats.io/api/profile/${profileId}/matches?leaderboard=0&before=${before}`;
+    const res = await fetch(url);
+    const matches = await res.json();
 
     if (!matches.length) break;
+
     allMatches.push(...matches);
-//    if (matches.length < limit) break;
+
+    const earliest = Math.min(...matches.map(m => m.startgametime));
+    if (!earliest) break;
+
+    before = earliest - 1; // step back
     await new Promise(r => setTimeout(r, 500)); // throttle
   }
 

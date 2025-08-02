@@ -21,7 +21,6 @@ app.listen(PORT, () => {
 async function crawlPlayerMatches(profileId) {
   const allMatches = [];
   let before = Math.floor(Date.now() / 1000); // start now
-  const limit = 60; // assumed
 
   while (true) {
     const url = `https://aomstats.io/api/profile/${profileId}/matches?leaderboard=0&before=${before}`;

@@ -29,6 +29,7 @@ db.exec(`
     description TEXT,
     startgametime INTEGER,
     raw_data TEXT,
+    win INTEGER,
     team_match_id TEXT,
     PRIMARY KEY(match_id, profile_id)
   )

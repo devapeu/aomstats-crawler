@@ -40,28 +40,11 @@ const insertMatch = db.prepare(`
   VALUES (@match_id, @profile_id, @description, @startgametime, @raw_data, @team_match_id)
 `);
 
-// Helper: Compute team_match_id from a match's players (implement as needed)
-function getTeamMatchId(match) {
-  // This example assumes 'players' array in match (you may need to adjust)
-  // For simplicity, fallback to null if no players
-  if (!match.players || match.players.length === 0) return null;
-
-  // Split players by win
-  const team1 = match.players.filter(p => p.win).map(p => p.profile_id).sort();
-  const team2 = match.players.filter(p => !p.win).map(p => p.profile_id).sort();
-
-  const sortedTeams = [team1, team2].sort((a,b) => a.join(',').localeCompare(b.join(',')));
-  return sortedTeams.map(t => t.join(',')).join(' vs ');
-}
-
 // Insert matches into DB
 function insertMatches(matches) {
   const insertMany = db.transaction((matches) => {
     for (const m of matches) {
       if (m.description === "AUTOMATCH") continue;
-
-      // Add team_match_id if possible
-      //const teamMatchId = getTeamMatchId(m) || null;
 
       insertMatch.run({
         match_id: m.match_id,
@@ -70,7 +53,7 @@ function insertMatches(matches) {
         startgametime: m.startgametime,
         win: m.win,
         raw_data: JSON.stringify(m),
-        team_match_id: teamMatchId
+        team_match_id: null,
       });
     }
   });

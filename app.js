@@ -114,6 +114,46 @@ app.get('/fetch-all', async(req, res) => {
   res.send("Finished fetching all matches and saved to DB!");
 });
 
+app.get('/teams/:team_id', (req, res) => {
+  const teamId = req.params.team_id;
+  if (!teamId.includes(' vs ')) {
+    return res.status(400).json({ error: 'Invalid team_id format' });
+  }
+
+  // Split the team_id into two teams of player IDs
+  const [team1Str, team2Str] = teamId.split(' vs ');
+  const team1 = team1Str.split(',').map(id => id.trim());
+  const team2 = team2Str.split(',').map(id => id.trim());
+
+  // Get the first player of team1 to determine perspective for win
+  const firstPlayerId = team1[0];
+
+  // Query DB for all matches with this team_match_id and profile_id
+  const rows = db.prepare(`
+    SELECT win FROM matches
+    WHERE team_match_id = ? AND profile_id = ?
+  `).all(teamId, firstPlayerId);
+
+  if (!rows.length) {
+    return res.status(404).json({ error: 'No matches found for this team combination' });
+  }
+
+  // Count wins and losses for this player on this team_match_id
+  const playerWins = rows.filter(r => r.win === 1).length;
+  const playerLosses = rows.filter(r => r.win === 0).length;
+
+  // Assume: if player won, then team1 won, else team2 won
+  // Calculate scores as number of wins/losses from this player's perspective
+  const response = {
+    team_id: teamId,
+    team_1_score: playerWins,
+    team_2_score: playerLosses,
+  };
+
+  res.json(response);
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

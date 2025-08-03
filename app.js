@@ -1,6 +1,6 @@
 const express = require('express');
-const axios = require('axios');
-const fs = require('fs'); // Or use DB write instead
+//const fetch = require('node-fetch'); // add node-fetch if using Node <18
+const Database = require('better-sqlite3');
 const app = express();
 const PORT = 3000;
 
@@ -16,16 +16,97 @@ const PLAYERS = [
   '1074203172',
   '1074839111',
   '1075268390'
-]
+];
+
+// Open or create DB
+const db = new Database('./db.sqlite');
+
+// Create table (adjust columns as needed)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS matches (
+    match_id INTEGER,
+    profile_id INTEGER,
+    description TEXT,
+    startgametime INTEGER,
+    raw_data TEXT,
+    team_match_id TEXT,
+    PRIMARY KEY(match_id, profile_id)
+  )
+`);
+
+// Prepared statement for inserts
+const insertMatch = db.prepare(`
+  INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, raw_data, team_match_id)
+  VALUES (@match_id, @profile_id, @description, @startgametime, @raw_data, @team_match_id)
+`);
+
+// Helper: Compute team_match_id from a match's players (implement as needed)
+function getTeamMatchId(match) {
+  // This example assumes 'players' array in match (you may need to adjust)
+  // For simplicity, fallback to null if no players
+  if (!match.players || match.players.length === 0) return null;
+
+  // Split players by win
+  const team1 = match.players.filter(p => p.win).map(p => p.profile_id).sort();
+  const team2 = match.players.filter(p => !p.win).map(p => p.profile_id).sort();
+
+  const sortedTeams = [team1, team2].sort((a,b) => a.join(',').localeCompare(b.join(',')));
+  return sortedTeams.map(t => t.join(',')).join(' vs ');
+}
+
+// Insert matches into DB
+function insertMatches(matches) {
+  const insertMany = db.transaction((matches) => {
+    for (const m of matches) {
+      if (m.description === "AUTOMATCH") continue;
+
+      // Add team_match_id if possible
+      //const teamMatchId = getTeamMatchId(m) || null;
+
+      insertMatch.run({
+        match_id: m.match_id,
+        profile_id: m.profile_id,
+        description: m.description,
+        startgametime: m.startgametime,
+        win: m.win,
+        raw_data: JSON.stringify(m),
+        team_match_id: teamMatchId
+      });
+    }
+  });
+
+  insertMany(matches);
+}
+
+function computeAndUpdateTeamMatchIds() {
+  const matchIds = db.prepare('SELECT DISTINCT match_id FROM matches').all();
+
+  const updateStmt = db.prepare('UPDATE matches SET team_match_id = ? WHERE match_id = ?');
+
+  for (const { match_id } of matchIds) {
+    const players = db.prepare('SELECT profile_id, raw_data FROM matches WHERE match_id = ?').all(match_id);
+
+    // Parse player data (raw_data contains full player info)
+    const playerObjs = players.map(p => JSON.parse(p.raw_data));
+
+    // Group players by team (assuming 'team' field in player object)
+    const team1 = playerObjs.filter(p => p.team === 0).map(p => p.profile_id).sort();
+    const team2 = playerObjs.filter(p => p.team === 1).map(p => p.profile_id).sort();
+
+    // Sort teams lex order to be order-agnostic
+    const sortedTeams = [team1, team2].sort((a,b) => a.join(',').localeCompare(b.join(',')));
+    const teamMatchId = sortedTeams.map(t => t.join(',')).join(' vs ');
+
+    updateStmt.run(teamMatchId, match_id);
+  }
+}
 
 app.get('/fetch/:profileId', async (req, res) => {
   const { profileId } = req.params;
   const matches = await crawlPlayerMatches(profileId);
-  
-  // Save to file (or DB)
-  fs.writeFileSync(`matches_${profileId}.json`, JSON.stringify(matches, null, 2));
-  
-  res.send(`Fetched ${matches.length} matches for profile ${profileId}`);
+  insertMatches(matches);
+  computeAndUpdateTeamMatchIds();
+  res.send(`Fetched and saved ${matches.length} matches for profile ${profileId}`);
 });
 
 app.get('/fetch-all', async(req, res) => {
@@ -34,9 +115,9 @@ app.get('/fetch-all', async(req, res) => {
 
   for (const p of PLAYERS) {
     const playerMatches = await crawlPlayerMatches(p);
-    
+
     for (const match of playerMatches) {
-      if (match.description == "AUTOMATCH") continue;
+      if (match.description === "AUTOMATCH") continue;
       const key = `${match.match_id}-${match.profile_id}`;
       if (!seen.has(key)){
         seen.add(key);
@@ -45,8 +126,8 @@ app.get('/fetch-all', async(req, res) => {
     }
   }
 
-  fs.writeFileSync(`all_matches.json`, JSON.stringify(allMatches, null, 2));
-  res.send("Finished fetching all matches! Whew!");
+  insertMatches(allMatches);
+  res.send("Finished fetching all matches and saved to DB!");
 });
 
 app.listen(PORT, () => {

@@ -29,7 +29,7 @@ db.exec(`
     description TEXT,
     startgametime INTEGER,
     raw_data TEXT,
-    win BOOLEAN,
+    win INTEGER,
     team_match_id TEXT,
     PRIMARY KEY(match_id, profile_id)
   )
@@ -52,7 +52,7 @@ function insertMatches(matches) {
         profile_id: m.profile_id,
         description: m.description,
         startgametime: m.startgametime,
-        win: m.win,
+        win: m.win ? 1 : 0,
         raw_data: JSON.stringify(m),
         team_match_id: null,
       });

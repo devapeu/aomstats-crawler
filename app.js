@@ -36,6 +36,7 @@ app.get('/fetch-all', async(req, res) => {
     const playerMatches = await crawlPlayerMatches(p);
     
     for (const match of playerMatches) {
+      if (match.description == "AUTOMATCH") continue;
       const key = `${match.match_id}-${match.profile_id}`;
       if (!seen.has(key)){
         seen.add(key);

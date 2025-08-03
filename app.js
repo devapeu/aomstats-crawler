@@ -37,8 +37,8 @@ db.exec(`
 
 // Prepared statement for inserts
 const insertMatch = db.prepare(`
-  INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, raw_data, team_match_id)
-  VALUES (@match_id, @profile_id, @description, @startgametime, @raw_data, @team_match_id)
+  INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, win, raw_data, team_match_id)
+  VALUES (@match_id, @profile_id, @description, @startgametime, @win, @raw_data, @team_match_id)
 `);
 
 // Insert matches into DB
@@ -89,7 +89,6 @@ app.get('/fetch/:profileId', async (req, res) => {
   const { profileId } = req.params;
   const matches = await crawlPlayerMatches(profileId);
   insertMatches(matches);
-  computeAndUpdateTeamMatchIds();
   res.send(`Fetched and saved ${matches.length} matches for profile ${profileId}`);
 });
 
@@ -111,6 +110,7 @@ app.get('/fetch-all', async(req, res) => {
   }
 
   insertMatches(allMatches);
+  computeAndUpdateTeamMatchIds();
   res.send("Finished fetching all matches and saved to DB!");
 });
 

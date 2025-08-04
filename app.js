@@ -9,6 +9,7 @@ const PLAYERS = require('./players');
 const PORT = 3000;
 
 app.use(cors());
+app.use('/aomstats', app);
 
 // Open or create DB
 const db = new Database('./db.sqlite');
@@ -34,6 +35,7 @@ app.get('/fetch/:profileId', async (req, res) => {
   res.send(`Fetched and saved ${matches.length} matches for profile ${profileId}`);
 });
 
+/*
 app.get('/fetch-all', async(req, res) => {
   const seen = new Set();
   const allMatches = [];
@@ -55,6 +57,7 @@ app.get('/fetch-all', async(req, res) => {
   computeAndUpdateTeamMatchIds();
   res.send("Finished fetching all matches and saved to DB!");
 });
+*/
 
 app.get('/teams/:team_id', (req, res) => {
   const teamId = req.params.team_id;

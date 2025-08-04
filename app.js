@@ -137,15 +137,13 @@ app.get('/teams/:team_id', (req, res) => {
   `).all(teamId, firstPlayerId);
 
   if (!rows.length) {
-    return res.status(404).json({ error: 'No matches found for this team combination' });
+    return res.json({ teams: null, message: 'No matches found for this team combination' });
   }
 
   // Count wins and losses for this player on this team_match_id
   const playerWins = rows.filter(r => r.win === 1).length;
   const playerLosses = rows.filter(r => r.win === 0).length;
 
-  // Assume: if player won, then team1 won, else team2 won
-  // Calculate scores as number of wins/losses from this player's perspective
   const response = {};
   response[team1] = playerWins;
   response[team2] = playerLosses;

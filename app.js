@@ -3,6 +3,8 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const app = express();
 const PORT = 3000;
+const cors = require('cors');
+app.use(cors());
 
 const PLAYERS = [
   '1074827715',
@@ -144,11 +146,9 @@ app.get('/teams/:team_id', (req, res) => {
 
   // Assume: if player won, then team1 won, else team2 won
   // Calculate scores as number of wins/losses from this player's perspective
-  const response = {
-    team_id: teamId,
-    team_1_score: playerWins,
-    team_2_score: playerLosses,
-  };
+  const response = {};
+  response[team1] = playerWins;
+  response[team2] = playerLosses;
 
   res.json(response);
 });

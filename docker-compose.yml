@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: aomstats-crawler
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./db.sqlite:/usr/src/app/db.sqlite
+    command: node app.js

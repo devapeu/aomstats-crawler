@@ -8,8 +8,9 @@ const PLAYERS = require('./players');
 
 const PORT = 3000;
 
-app.use(cors());
-app.use('/aomstats', app);
+app.use(cors({
+  origin: 'https://comix.fluffygangcomic.com'
+}));
 
 // Open or create DB
 const db = new Database('./db.sqlite');
@@ -28,7 +29,7 @@ db.exec(`
   )
 `);
 
-app.get('/fetch/:profileId', async (req, res) => {
+app.get('/aomstats/fetch/:profileId', async (req, res) => {
   const { profileId } = req.params;
   const matches = await crawlPlayerMatches(profileId);
   insertMatches(matches);
@@ -59,7 +60,7 @@ app.get('/fetch-all', async(req, res) => {
 });
 */
 
-app.get('/teams/:team_id', (req, res) => {
+app.get('/aomstats/teams/:team_id', (req, res) => {
   const teamId = req.params.team_id;
   if (!teamId.includes(' vs ')) {
     return res.status(400).json({ error: 'Invalid team_id format' });

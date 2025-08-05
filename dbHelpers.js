@@ -46,7 +46,7 @@ const computeAndUpdateTeamMatchIds = () => {
   }
 }
 
-const crawlPlayerMatches = async (profileId) => {
+const crawlPlayerMatches = async (profileId, beforeLimit) => {
   const allMatches = [];
   let before = Math.floor(Date.now() / 1000); // start now
 
@@ -61,6 +61,11 @@ const crawlPlayerMatches = async (profileId) => {
 
     const earliest = Math.min(...matches.map(m => m.startgametime));
     if (!earliest) break;
+
+    if (beforeLimit) {
+      const latest = Math.max(...matches.map(m => m.startgametime));
+      if (beforeLimit > latest) break;
+    }
     
     before = earliest - 1; // step back
     await new Promise(r => setTimeout(r, 500)); // throttle

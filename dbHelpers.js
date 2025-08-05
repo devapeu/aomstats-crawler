@@ -23,7 +23,7 @@ const insertMatches = (db, matches) => {
   insertMany(matches);
 };
 
-const computeAndUpdateTeamMatchIds = () => {
+const computeAndUpdateTeamMatchIds = (db) => {
   const matchIds = db.prepare('SELECT DISTINCT match_id FROM matches').all();
 
   const updateStmt = db.prepare('UPDATE matches SET team_match_id = ? WHERE match_id = ?');

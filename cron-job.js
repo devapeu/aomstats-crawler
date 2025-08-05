@@ -1,5 +1,5 @@
 const Database = require('better-sqlite3');
-const fetch = require('node-fetch');
+//const fetch = require('node-fetch');
 
 const PLAYERS = require('./players');
 const { 
@@ -29,8 +29,8 @@ const db = new Database('./db.sqlite');
     }
   }
 
-  insertMatches(allMatches);
-  computeAndUpdateTeamMatchIds();
+  insertMatches(db, allMatches);
+  computeAndUpdateTeamMatchIds(db);
 
   console.log(`Fetched and saved ${allMatches.length} matches`);
 })();

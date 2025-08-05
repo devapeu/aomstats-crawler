@@ -5,6 +5,7 @@ const app = express();
 const cors = require('cors');
 const { insertMatches, computeAndUpdateTeamMatchIds } = require('./dbHelpers');
 const PLAYERS = require('./players');
+const cron = require('node-cron');
 
 const PORT = 3000;
 
@@ -28,6 +29,33 @@ db.exec(`
     PRIMARY KEY(match_id, profile_id)
   )
 `);
+
+
+cron.schedule('0 0 * * *', async () => {
+  const seen = new Set();
+  const allMatches = [];
+
+  const stmt = db.prepare(`SELECT MAX(startgametime) as latest FROM matches`);
+  const result = stmt.get();
+  const latestRecordDate = result.latest;
+
+  for (const p of PLAYERS) {
+    const matches = await crawlPlayerMatches(p, latestRecordDate);
+    for (const m of matches) {
+      const key = `${m.match_id}-${m.profile_id}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        allMatches.push(m);
+      }
+    }
+  }
+
+  insertMatches(db, allMatches);
+  computeAndUpdateTeamMatchIds(db);
+
+  console.log(`Fetched and saved ${allMatches.length} matches`);
+})
+
 
 app.get('/fetch/:profileId', async (req, res) => {
   const { profileId } = req.params;
@@ -54,8 +82,8 @@ app.get('/fetch-all', async(req, res) => {
     }
   }
 
-  insertMatches(allMatches);
-  computeAndUpdateTeamMatchIds();
+  insertMatches(db, allMatches);
+  computeAndUpdateTeamMatchIds(db);
   res.send("Finished fetching all matches and saved to DB!");
 });
 */

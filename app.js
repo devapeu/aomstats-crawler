@@ -9,7 +9,7 @@ const PLAYERS = require('./players');
 const PORT = 3000;
 
 app.use(cors({
-  origin: 'https://comix.fluffygangcomic.com'
+  origin: '*'
 }));
 
 // Open or create DB

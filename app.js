@@ -31,7 +31,7 @@ db.exec(`
 `);
 
 
-cron.schedule('0 0 * * *', async () => {
+cron.schedule('0 9 * * *', async () => { // runs at 5 am EST
   const seen = new Set();
   const allMatches = [];
 

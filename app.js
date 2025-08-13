@@ -134,7 +134,7 @@ app.get('/gods/:profile_id', (req, res) => {
         2
       ) AS winrate_percent
     FROM matches
-    WHERE profile_id = ? AND startgametime > after
+    WHERE profile_id = ? AND startgametime > ?
     GROUP BY god
     ORDER BY total_games DESC`).all(req.params.profile_id, after);
 

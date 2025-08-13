@@ -1,7 +1,7 @@
 const insertMatches = (db, matches) => {
   const insertMatch = db.prepare(`
     INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, win, god, mapname, raw_data, team_match_id)
-    VALUES (@match_id, @profile_id, @description, @startgametime, @win, @raw_data, @team_match_id)
+    VALUES (@match_id, @profile_id, @description, @startgametime, @win, @god, @mapname, @raw_data, @team_match_id)
   `);
 
   const insertMany = db.transaction((matches) => {

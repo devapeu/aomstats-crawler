@@ -1,6 +1,6 @@
 const insertMatches = (db, matches) => {
   const insertMatch = db.prepare(`
-    INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, win, raw_data, team_match_id)
+    INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, win, god, mapname, raw_data, team_match_id)
     VALUES (@match_id, @profile_id, @description, @startgametime, @win, @raw_data, @team_match_id)
   `);
 
@@ -14,6 +14,8 @@ const insertMatches = (db, matches) => {
         description: m.description,
         startgametime: m.startgametime,
         win: m.win ? 1 : 0,
+        god: m.god,
+        mapname: m.mapname,
         raw_data: JSON.stringify(m),
         team_match_id: null,
       });

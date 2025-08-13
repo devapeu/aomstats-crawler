@@ -123,6 +123,35 @@ app.get('/teams/:team_id', (req, res) => {
   res.json(response);
 });
 
+app.get('/gods/:profile_id', (req, res) => {
+  const rows = db.prepare(`
+    SELECT 
+      god,
+      COUNT(*) AS total_games,
+      ROUND(
+        COUNT(CASE WHEN win = 1 THEN 1 END) * 100.0 / COUNT(*),
+        2
+      ) AS winrate_percent
+    FROM matches
+    WHERE profile_id = ?
+    GROUP BY god
+    ORDER BY total_games DESC`).all(req.params.profile_id);
+
+  if (!rows.length) {
+    return res.json({ god: null, message: 'No data found for this player' });
+  }
+
+  const response = {
+    gods: rows.map(row => ({
+      name: row.god,
+      total_games: row.total_games,
+      winrate_percent: row.winrate_percent
+    }))
+  };
+
+  res.json(response);
+})
+
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

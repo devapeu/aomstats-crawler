@@ -124,6 +124,7 @@ app.get('/teams/:team_id', (req, res) => {
 });
 
 app.get('/gods/:profile_id', (req, res) => {
+  const after = req.query.after ?? 0;
   const rows = db.prepare(`
     SELECT 
       god,
@@ -133,9 +134,9 @@ app.get('/gods/:profile_id', (req, res) => {
         2
       ) AS winrate_percent
     FROM matches
-    WHERE profile_id = ?
+    WHERE profile_id = ? AND startgametime > after
     GROUP BY god
-    ORDER BY total_games DESC`).all(req.params.profile_id);
+    ORDER BY total_games DESC`).all(req.params.profile_id, after);
 
   if (!rows.length) {
     return res.json({ god: null, message: 'No data found for this player' });

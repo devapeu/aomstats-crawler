@@ -161,7 +161,7 @@ app.get('/partners/:profile_id', (req, res) => {
     WHERE profile_id = ? AND startgametime > ?`
   ).all(req.params.profile_id, after);
 
-  let playerCount = {};
+  let playerStats = {}; // { partnerId: { wins: X, total: Y } }
   let total = 0;
 
   if (!rows.length) {
@@ -173,27 +173,26 @@ app.get('/partners/:profile_id', (req, res) => {
     const playerTeam = team1.includes(req.params.profile_id) ? team1 : team2;
 
     total++;
-    
     if (!playerTeam) return;
 
-    playerTeam.splice(playerTeam.indexOf(req.params.profile_id), 1);
+    // Remove self from team
+    const idx = playerTeam.indexOf(req.params.profile_id);
+    if (idx !== -1) playerTeam.splice(idx, 1);
 
-    if (row.win === 1) {
-      playerTeam.forEach(p => {
-        if (!PLAYERS.includes(p)) return;
-        
-        if (!playerCount[p]) {
-          playerCount[p] = 1;
-        } else {
-          playerCount[p]++
-        }
-      })
-    }
-
-  })
+    playerTeam.forEach(p => {
+      if (!PLAYERS.includes(p)) return;
+      if (!playerStats[p]) {
+        playerStats[p] = { wins: 0, total: 0 };
+      }
+      playerStats[p].total++;
+      if (row.win === 1) {
+        playerStats[p].wins++;
+      }
+    });
+  });
 
   res.json({
-    players: playerCount,
+    players: playerStats,
     total: total,
   });
 })

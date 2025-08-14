@@ -154,7 +154,13 @@ app.get('/gods/:profile_id', (req, res) => {
 })
 
 app.get('/partners/:profile_id', (req, res) => {
-  const rows = db.prepare(`SELECT match_id, team_match_id, win FROM matches WHERE profile_id = ?`).all(req.params.profile_id);
+  const after = req.query.after ?? 0;
+  const rows = db.prepare(`
+    SELECT match_id, team_match_id, win 
+    FROM matches 
+    WHERE profile_id = ? AND startgametime > ?`
+  ).all(req.params.profile_id, after);
+  
   let playerCount = {};
   let total = 0;
 

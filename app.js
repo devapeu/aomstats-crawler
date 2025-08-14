@@ -153,6 +153,42 @@ app.get('/gods/:profile_id', (req, res) => {
   res.json(response);
 })
 
+app.get('/partners/:profile_id', (req, res) => {
+  const rows = db.prepare(`SELECT match_id, team_match_id, win FROM matches WHERE profile_id = ?`).all(req.params.profile_id);
+  let playerCount = {};
+  let total = 0;
+
+  if (!rows.length) {
+    return res.json({ message: 'Unable to fetch data for this player' });
+  }
+
+  rows.forEach(row => {
+    const [team1, team2] = row.team_match_id.split(" vs ").map(t => t.split(","));
+    const playerTeam = team1.includes(req.params.profile_id) ? team1 : team2;
+
+    total++;
+    
+    if (!playerTeam) return;
+
+    playerTeam.splice(playerTeam.indexOf(req.params.profile_id), 1);
+
+    if (row.win === 1) {
+      playerTeam.forEach(p => {
+        if (!playerCount[p]) {
+          playerCount[p] = 1;
+        } else {
+          playerCount[p]++
+        }
+      })
+    }
+
+  })
+
+  res.json({
+    players: playerCount,
+    total: total,
+  });
+})
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

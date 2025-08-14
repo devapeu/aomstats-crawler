@@ -160,7 +160,7 @@ app.get('/partners/:profile_id', (req, res) => {
     FROM matches 
     WHERE profile_id = ? AND startgametime > ?`
   ).all(req.params.profile_id, after);
-  
+
   let playerCount = {};
   let total = 0;
 
@@ -180,6 +180,8 @@ app.get('/partners/:profile_id', (req, res) => {
 
     if (row.win === 1) {
       playerTeam.forEach(p => {
+        if (!PLAYERS.includes(p)) return;
+        
         if (!playerCount[p]) {
           playerCount[p] = 1;
         } else {

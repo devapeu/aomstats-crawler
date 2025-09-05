@@ -6,7 +6,9 @@ const insertMatches = (db, matches) => {
 
   const insertMany = db.transaction((matches) => {
     for (const m of matches) {
-      if (m.description === "AUTOMATCH") continue;
+      if ( m.description === "AUTOMATCH" || m.resulttype === 4 || m.duration < 300 ) { 
+        continue 
+      }
 
       insertMatch.run({
         match_id: m.match_id,

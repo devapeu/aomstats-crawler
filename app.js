@@ -197,6 +197,47 @@ app.get('/partners/:profile_id', (req, res) => {
   });
 })
 
+app.get('/winstreak/:profile_id', (req, res) => {
+  const query = db.prepare(`
+    WITH streaks AS (
+      SELECT
+        profile_id,
+        match_id,
+        win,
+        SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END)
+          OVER (PARTITION BY profile_id ORDER BY match_id ROWS UNBOUNDED PRECEDING) AS loss_group
+      FROM matches
+      WHERE profile_id = ?
+    ),
+    grouped AS (
+      SELECT
+        profile_id,
+        loss_group,
+        COUNT(*) AS streak_length,
+        MAX(match_id) AS last_match_id
+      FROM streaks
+      WHERE win = 1
+      GROUP BY profile_id, loss_group
+    )
+    SELECT g.streak_length
+    FROM grouped g
+    JOIN (
+        SELECT MAX(last_match_id) AS last_match_id
+        FROM grouped
+    ) latest
+      ON g.last_match_id = latest.last_match_id;
+  `).all(req.params.profile_id);
+
+  if (!query.length) {
+    return res.json({ message: 'Unable to fetch data for this player' });
+  }
+
+  res.json({
+    winstreak: query[0].streak_length,
+  })
+  
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

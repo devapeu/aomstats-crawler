@@ -75,8 +75,8 @@ to make an initial fetch into `db.sqlite`.
 
 ```json
 {
-  "['id1','id2']": 7,
-  "['id3','id4']": 3
+  "id1,id2": 7,
+  "id3,id4": 3
 }
 ```
 

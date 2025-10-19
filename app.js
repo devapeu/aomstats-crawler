@@ -135,8 +135,8 @@ app.get('/gods/:profile_id', (req, res) => {
   res.json(response);
 })
 
-app.get('/partners/:profile_id', getStats(db, 'partners'));
-app.get('/rivals/:profile_id', getStats(db, 'rivals'));
+app.get('/partners/:profile_id', getStats(db, PLAYERS, 'partners'));
+app.get('/rivals/:profile_id', getStats(db, PLAYERS, 'rivals'));
 
 app.get('/winstreak/:profile_id', (req, res) => {
   const query = db.prepare(`

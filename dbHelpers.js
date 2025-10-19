@@ -78,7 +78,7 @@ const crawlPlayerMatches = async (profileId, beforeLimit) => {
   return allMatches;
 }
 
-function getStats(db, type) {
+function getStats(db, players, type) {
   return (req, res) => {
     const after = req.query.after ?? 0;
     const rows = db.prepare(`
@@ -110,7 +110,7 @@ function getStats(db, type) {
         : targetTeam;
 
       filtered.forEach(id => {
-        if (!PLAYERS.includes(id)) return;
+        if (!players.includes(id)) return;
         if (!stats[id]) stats[id] = { wins: 0, total: 0 };
         stats[id].total++;
 

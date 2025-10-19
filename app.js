@@ -153,49 +153,56 @@ app.get('/gods/:profile_id', (req, res) => {
   res.json(response);
 })
 
-app.get('/partners/:profile_id', (req, res) => {
-  const after = req.query.after ?? 0;
-  const rows = db.prepare(`
-    SELECT match_id, team_match_id, win 
-    FROM matches 
-    WHERE profile_id = ? AND startgametime > ?`
-  ).all(req.params.profile_id, after);
+function getStats(type) {
+  return (req, res) => {
+    const after = req.query.after ?? 0;
+    const rows = db.prepare(`
+      SELECT match_id, team_match_id, win
+      FROM matches
+      WHERE profile_id = ? AND startgametime > ?
+    `).all(req.params.profile_id, after);
 
-  let playerStats = {}; // { partnerId: { wins: X, total: Y } }
-  let total = 0;
+    if (!rows.length) {
+      return res.json({ message: 'Unable to fetch data for this player' });
+    }
 
-  if (!rows.length) {
-    return res.json({ message: 'Unable to fetch data for this player' });
-  }
+    const stats = {}; // { partnerId/rivalId: { wins, total } }
+    let total = 0;
 
-  rows.forEach(row => {
-    const [team1, team2] = row.team_match_id.split(" vs ").map(t => t.split(","));
-    const playerTeam = team1.includes(req.params.profile_id) ? team1 : team2;
+    rows.forEach(row => {
+      const [team1, team2] = row.team_match_id.split(" vs ").map(t => t.split(","));
+      const isTeam1 = team1.includes(req.params.profile_id);
+      const playerTeam = isTeam1 ? team1 : team2;
+      const otherTeam  = isTeam1 ? team2 : team1;
+      const targetTeam = type === 'partners' ? playerTeam : otherTeam;
 
-    total++;
-    if (!playerTeam) return;
+      if (!targetTeam) return;
+      total++;
 
-    // Remove self from team
-    const idx = playerTeam.indexOf(req.params.profile_id);
-    if (idx !== -1) playerTeam.splice(idx, 1);
+      // Remove self if partner stats
+      const filtered = type === 'partners'
+        ? targetTeam.filter(p => p !== req.params.profile_id)
+        : targetTeam;
 
-    playerTeam.forEach(p => {
-      if (!PLAYERS.includes(p)) return;
-      if (!playerStats[p]) {
-        playerStats[p] = { wins: 0, total: 0 };
-      }
-      playerStats[p].total++;
-      if (row.win === 1) {
-        playerStats[p].wins++;
-      }
+      filtered.forEach(id => {
+        if (!PLAYERS.includes(id)) return;
+        if (!stats[id]) stats[id] = { wins: 0, total: 0 };
+        stats[id].total++;
+
+        // For partners: count win if row.win === 1
+        // For rivals: count win if row.win === 0 (i.e. they lost)
+        const won = (type === 'partners' && row.win === 1) ||
+                    (type === 'rivals' && row.win === 0);
+        if (won) stats[id].wins++;
+      });
     });
-  });
 
-  res.json({
-    players: playerStats,
-    total: total,
-  });
-})
+    res.json({ players: stats, total });
+  };
+}
+
+app.get('/partners/:profile_id', getStats('partners'));
+app.get('/rivals/:profile_id', getStats('rivals'));
 
 app.get('/winstreak/:profile_id', (req, res) => {
   const query = db.prepare(`

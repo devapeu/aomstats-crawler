@@ -78,4 +78,52 @@ const crawlPlayerMatches = async (profileId, beforeLimit) => {
   return allMatches;
 }
 
-module.exports = { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches };
+function getStats(type) {
+  return (req, res) => {
+    const after = req.query.after ?? 0;
+    const rows = db.prepare(`
+      SELECT match_id, team_match_id, win
+      FROM matches
+      WHERE profile_id = ? AND startgametime > ?
+    `).all(req.params.profile_id, after);
+
+    if (!rows.length) {
+      return res.json({ message: 'Unable to fetch data for this player' });
+    }
+
+    const stats = {}; // { partnerId/rivalId: { wins, total } }
+    let total = 0;
+
+    rows.forEach(row => {
+      const [team1, team2] = row.team_match_id.split(" vs ").map(t => t.split(","));
+      const isTeam1 = team1.includes(req.params.profile_id);
+      const playerTeam = isTeam1 ? team1 : team2;
+      const otherTeam  = isTeam1 ? team2 : team1;
+      const targetTeam = type === 'partners' ? playerTeam : otherTeam;
+
+      if (!targetTeam) return;
+      total++;
+
+      // Remove self if partner stats
+      const filtered = type === 'partners'
+        ? targetTeam.filter(p => p !== req.params.profile_id)
+        : targetTeam;
+
+      filtered.forEach(id => {
+        if (!PLAYERS.includes(id)) return;
+        if (!stats[id]) stats[id] = { wins: 0, total: 0 };
+        stats[id].total++;
+
+        // For partners: count win if row.win === 1
+        // For rivals: count win if row.win === 0 (i.e. they lost)
+        const won = (type === 'partners' && row.win === 1) ||
+                    (type === 'rivals' && row.win === 0);
+        if (won) stats[id].wins++;
+      });
+    });
+
+    res.json({ players: stats, total });
+  };
+}
+
+module.exports = { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats };

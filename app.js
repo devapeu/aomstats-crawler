@@ -3,7 +3,7 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const app = express();
 const cors = require('cors');
-const { insertMatches, computeAndUpdateTeamMatchIds } = require('./dbHelpers');
+const { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats } = require('./dbHelpers');
 const PLAYERS = require('./players');
 const cron = require('node-cron');
 
@@ -63,30 +63,6 @@ app.get('/fetch/:profileId', async (req, res) => {
   insertMatches(matches);
   res.send(`Fetched and saved ${matches.length} matches for profile ${profileId}`);
 });
-
-/*
-app.get('/fetch-all', async(req, res) => {
-  const seen = new Set();
-  const allMatches = [];
-
-  for (const p of PLAYERS) {
-    const playerMatches = await crawlPlayerMatches(p);
-
-    for (const match of playerMatches) {
-      if (match.description === "AUTOMATCH") continue;
-      const key = `${match.match_id}-${match.profile_id}`;
-      if (!seen.has(key)){
-        seen.add(key);
-        allMatches.push(match);
-      }
-    }
-  }
-
-  insertMatches(db, allMatches);
-  computeAndUpdateTeamMatchIds(db);
-  res.send("Finished fetching all matches and saved to DB!");
-});
-*/
 
 app.get('/teams/:team_id', (req, res) => {
   const teamId = req.params.team_id;
@@ -153,54 +129,6 @@ app.get('/gods/:profile_id', (req, res) => {
   res.json(response);
 })
 
-function getStats(type) {
-  return (req, res) => {
-    const after = req.query.after ?? 0;
-    const rows = db.prepare(`
-      SELECT match_id, team_match_id, win
-      FROM matches
-      WHERE profile_id = ? AND startgametime > ?
-    `).all(req.params.profile_id, after);
-
-    if (!rows.length) {
-      return res.json({ message: 'Unable to fetch data for this player' });
-    }
-
-    const stats = {}; // { partnerId/rivalId: { wins, total } }
-    let total = 0;
-
-    rows.forEach(row => {
-      const [team1, team2] = row.team_match_id.split(" vs ").map(t => t.split(","));
-      const isTeam1 = team1.includes(req.params.profile_id);
-      const playerTeam = isTeam1 ? team1 : team2;
-      const otherTeam  = isTeam1 ? team2 : team1;
-      const targetTeam = type === 'partners' ? playerTeam : otherTeam;
-
-      if (!targetTeam) return;
-      total++;
-
-      // Remove self if partner stats
-      const filtered = type === 'partners'
-        ? targetTeam.filter(p => p !== req.params.profile_id)
-        : targetTeam;
-
-      filtered.forEach(id => {
-        if (!PLAYERS.includes(id)) return;
-        if (!stats[id]) stats[id] = { wins: 0, total: 0 };
-        stats[id].total++;
-
-        // For partners: count win if row.win === 1
-        // For rivals: count win if row.win === 0 (i.e. they lost)
-        const won = (type === 'partners' && row.win === 1) ||
-                    (type === 'rivals' && row.win === 0);
-        if (won) stats[id].wins++;
-      });
-    });
-
-    res.json({ players: stats, total });
-  };
-}
-
 app.get('/partners/:profile_id', getStats('partners'));
 app.get('/rivals/:profile_id', getStats('rivals'));
 
@@ -248,26 +176,3 @@ app.get('/winstreak/:profile_id', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
-
-async function crawlPlayerMatches(profileId) {
-  const allMatches = [];
-  let before = Math.floor(Date.now() / 1000); // start now
-
-  while (true) {
-    const url = `https://aomstats.io/api/profile/${profileId}/matches?leaderboard=0&before=${before}`;
-    const res = await fetch(url);
-    const matches = await res.json();
-
-    if (!matches.length) break;
-
-    allMatches.push(...matches);
-
-    const earliest = Math.min(...matches.map(m => m.startgametime));
-    if (!earliest) break;
-
-    before = earliest - 1; // step back
-    await new Promise(r => setTimeout(r, 500)); // throttle
-  }
-
-  return allMatches;
-}

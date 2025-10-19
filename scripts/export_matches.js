@@ -16,7 +16,7 @@ const playerMap = {
 const fs = require('fs');
 const Database = require('better-sqlite3');
 
-const db = new Database('./db.sqlite');
+const db = new Database('../db.sqlite');
 
 // Updated stmt includes profile_id and win
 const stmt = db.prepare(`

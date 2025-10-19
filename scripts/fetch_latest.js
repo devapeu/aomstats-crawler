@@ -1,14 +1,14 @@
 const Database = require('better-sqlite3');
 //const fetch = require('node-fetch');
 
-const PLAYERS = require('./players');
+const PLAYERS = require('../players');
 const { 
   insertMatches, 
   computeAndUpdateTeamMatchIds,
   crawlPlayerMatches
- } = require('./dbHelpers');
+ } = require('../dbHelpers');
 
-const db = new Database('./db.sqlite');
+const db = new Database('../db.sqlite');
 
 (async () => {
   const seen = new Set();

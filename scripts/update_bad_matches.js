@@ -2,7 +2,7 @@
 const Database = require('better-sqlite3');
 
 // adjust the path to where your DB is inside the container
-const db = new Database('./db.sqlite');
+const db = new Database('../db.sqlite');
 
 // Update rows from JSON
 

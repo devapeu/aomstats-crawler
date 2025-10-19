@@ -78,7 +78,7 @@ const crawlPlayerMatches = async (profileId, beforeLimit) => {
   return allMatches;
 }
 
-function getStats(type) {
+function getStats(db, type) {
   return (req, res) => {
     const after = req.query.after ?? 0;
     const rows = db.prepare(`

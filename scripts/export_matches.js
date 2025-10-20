@@ -14,9 +14,11 @@ const playerMap = {
 };
 
 const fs = require('fs');
+const path = require('path');
 const Database = require('better-sqlite3');
 
-const db = new Database('../db.sqlite');
+const dbPath = path.resolve(__dirname, '..', 'db.sqlite');
+const db = new Database(dbPath);
 
 // Updated stmt includes profile_id and win
 const stmt = db.prepare(`

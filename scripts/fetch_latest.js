@@ -8,7 +8,11 @@ const {
   crawlPlayerMatches
  } = require('../dbHelpers');
 
-const db = new Database('../db.sqlite');
+const path = require('path');
+const Database = require('better-sqlite3');
+
+const dbPath = path.resolve(__dirname, '..', 'db.sqlite');
+const db = new Database(dbPath);
 
 (async () => {
   const seen = new Set();

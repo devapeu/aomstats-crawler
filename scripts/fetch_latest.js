@@ -2,6 +2,8 @@ const Database = require('better-sqlite3');
 //const fetch = require('node-fetch');
 
 const PLAYERS = require('../players');
+const playerIds = Object.keys(PLAYERS);
+
 const { 
   insertMatches, 
   computeAndUpdateTeamMatchIds,
@@ -22,7 +24,7 @@ const db = new Database(dbPath);
   const result = stmt.get();
   const latestRecordDate = result.latest;
 
-  for (const p of PLAYERS) {
+  for (const p of playerIds) {
     const matches = await crawlPlayerMatches(p, latestRecordDate);
     for (const m of matches) {
       const key = `${m.match_id}-${m.profile_id}`;

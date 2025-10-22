@@ -1,21 +1,7 @@
-const playerMap = {
-  '1074827715': "Ayax",
-  '1074199836': "Diego",
-  '1076671413': "Diego",
-  '1073862520': "Piero",
-  '1074875183': "Jair",
-  '1074196830': "Jaume",
-  '1074910820': "Sebastián",
-  '1075027222': "Renato",
-  '1074849746': "Héctor",
-  '1074203172': "Jardani",
-  '1074839111': "Christian",
-  '1075268390': "Almeyda"
-};
-
 const fs = require('fs');
 const path = require('path');
 const Database = require('better-sqlite3');
+const PLAYERS = require(path.resolve(__dirname, '..', 'players.js'));
 
 const dbPath = path.resolve(__dirname, '..', 'db.sqlite');
 const db = new Database(dbPath);
@@ -43,11 +29,11 @@ const result = Object.entries(matchesMap).map(([match_id, matchRows]) => {
   // Sort players into winners and losers based on win column
   const winners = matchRows
     .filter(r => r.win === 1)
-    .map(r => playerMap[r.profile_id] ?? r.profile_id);
+    .map(r => PLAYERS[r.profile_id] ?? r.profile_id);
 
   const losers = matchRows
     .filter(r => r.win === 0)
-    .map(r => playerMap[r.profile_id] ?? r.profile_id);
+    .map(r => PLAYERS[r.profile_id] ?? r.profile_id);
 
   return `${match_id},${winners.join("-")},${losers.join("-")}`;
 }).filter(Boolean);

@@ -16,6 +16,9 @@ app.use(cors({
 // Open or create DB
 const db = new Database('./db.sqlite');
 
+// Use player IDs (keys) to perform loops
+const playerIds = Object.keys(PLAYERS);
+
 // Create table (adjust columns as needed)
 db.exec(`
   CREATE TABLE IF NOT EXISTS matches (
@@ -40,7 +43,7 @@ cron.schedule('0 9 * * *', async () => { // runs at 5 am EST
     const result = stmt.get();
     const latestRecordDate = result.latest;
 
-    for (const p of PLAYERS) {
+    for (const p of playerIds) {
       const matches = await crawlPlayerMatches(p, latestRecordDate);
       for (const m of matches) {
         const key = `${m.match_id}-${m.profile_id}`;
@@ -135,8 +138,8 @@ app.get('/gods/:profile_id', (req, res) => {
   res.json(response);
 })
 
-app.get('/partners/:profile_id', getStats(db, PLAYERS, 'partners'));
-app.get('/rivals/:profile_id', getStats(db, PLAYERS, 'rivals'));
+app.get('/partners/:profile_id', getStats(db, playerIds, 'partners'));
+app.get('/rivals/:profile_id', getStats(db, playerIds, 'rivals'));
 
 app.get('/winstreak/:profile_id', (req, res) => {
   const query = db.prepare(`

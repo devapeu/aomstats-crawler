@@ -1,15 +1,9 @@
-const PLAYERS = [
-  '1074827715',
-  '1074199836',
-  '1073862520',
-  '1074875183',
-  '1074196830',
-  '1074910820',
-  '1075027222',
-  '1074849746',
-  '1074203172',
-  '1074839111',
-  '1075268390'
-];
+// Add ID and name for players you want to track stats of.
+// Use the player's ID in aomstats.io as the key and define a name for them as the value.
+
+ const PLAYERS = {
+  // Example
+  // "1234556789": "HilariousAlpaca99"
+};
 
 module.exports = PLAYERS;

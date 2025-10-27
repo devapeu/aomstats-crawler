@@ -143,41 +143,47 @@ app.get('/rivals/:profile_id', getStats(db, playerIds, 'rivals'));
 
 app.get('/winstreak/:profile_id', (req, res) => {
   const query = db.prepare(`
-    WITH streaks AS (
-      SELECT
-        profile_id,
-        match_id,
-        win,
-        SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END)
-          OVER (PARTITION BY profile_id ORDER BY match_id ROWS UNBOUNDED PRECEDING) AS loss_group
-      FROM matches
-      WHERE profile_id = ?
-    ),
-    grouped AS (
-      SELECT
-        profile_id,
-        loss_group,
-        COUNT(*) AS streak_length,
-        MAX(match_id) AS last_match_id
-      FROM streaks
-      WHERE win = 1
-      GROUP BY profile_id, loss_group
-    )
-    SELECT g.streak_length
-    FROM grouped g
-    JOIN (
-        SELECT MAX(last_match_id) AS last_match_id
-        FROM grouped
-    ) latest
-      ON g.last_match_id = latest.last_match_id;
-  `).all(req.params.profile_id);
+  WITH streaks AS (
+    SELECT
+      profile_id,
+      match_id,
+      win,
+      SUM(CASE WHEN win = 0 THEN 1 ELSE 0 END)
+        OVER (PARTITION BY profile_id ORDER BY match_id ROWS UNBOUNDED PRECEDING) AS loss_group
+    FROM matches
+    WHERE profile_id = ?
+  ),
+  grouped AS (
+    SELECT
+      profile_id,
+      loss_group,
+      COUNT(*) AS streak_length,
+      MAX(match_id) AS last_match_id
+    FROM streaks
+    WHERE win = 1
+    GROUP BY profile_id, loss_group
+  ),
+  last_match AS (
+    SELECT MAX(match_id) AS max_match_id
+    FROM matches
+    WHERE profile_id = ?
+  )
+  SELECT COALESCE(g.streak_length, 0) AS current_streak
+  FROM last_match lm
+  LEFT JOIN streaks s
+    ON s.match_id = lm.max_match_id
+  LEFT JOIN grouped g
+    ON g.profile_id = s.profile_id AND g.loss_group = s.loss_group;
+  `).all(req.params.profile_id, req.params.profile_id);
+
+  console.log(query)
 
   if (!query.length) {
     return res.json({ message: 'Unable to fetch data for this player' });
   }
 
   res.json({
-    winstreak: query[0].streak_length,
+    winstreak: query[0].current_streak,
   })
   
 })

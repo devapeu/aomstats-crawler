@@ -3,7 +3,7 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const app = express();
 const cors = require('cors');
-const { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats } = require('./dbHelpers');
+const { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats, calculateWinProbability } = require('./dbHelpers');
 const PLAYERS = require('./players');
 const cron = require('node-cron');
 
@@ -157,8 +157,15 @@ app.get('/gods/:profile_id', (req, res) => {
   res.json(response);
 })
 
-app.get('/partners/:profile_id', getStats(db, playerIds, 'partners'));
-app.get('/rivals/:profile_id', getStats(db, playerIds, 'rivals'));
+app.get(
+  '/partners/:profile_id',
+  getStats(db, playerIds, 'partners', req => req.params.profile_id)
+);
+
+app.get(
+  '/rivals/:profile_id',
+  getStats(db, playerIds, 'rivals', req => req.params.profile_id)
+);
 
 app.get('/winstreak/:profile_id', (req, res) => {
   const query = db.prepare(`
@@ -283,6 +290,34 @@ app.post('/send-planner-to-discord', validateApiKey, async (req, res) => {
     res.status(500).json({
       code: 500,
       message: `Server error: ${err.message}`
+    });
+  }
+});
+
+// Endpoint to calculate team odds
+app.post('/team-odds', async (req, res) => {
+  try {
+    const { team1, team2 } = req.body;
+    if (!Array.isArray(team1) || !Array.isArray(team2) || team1.length === 0 || team2.length === 0) {
+      return res.status(400).json({
+        code: 400,
+        message: 'Both team1 and team2 must be non-empty arrays.'
+      });
+    }
+    // Coerce all IDs to strings
+    const team1Str = team1.map(String);
+    const team2Str = team2.map(String);
+    const probability = await calculateWinProbability(db, team1Str, team2Str);
+    res.json({
+      code: 200,
+      probability,
+      percent: Math.round(probability * 10000) / 100 // rounded to 2 decimals
+    });
+  } catch (err) {
+    console.error('Error calculating team odds:', err);
+    res.status(500).json({
+      code: 500,
+      message: err.message || 'Internal server error.'
     });
   }
 });

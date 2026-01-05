@@ -146,39 +146,63 @@ function getStatsAsync(db, players, type, profileId) {
 }
 
 /**
- * Calculate the win probability for team1 vs team2 using log-odds.
+ * Calculate the win probability for team1 vs team2 using both Elo ratings and historical data.
+ * Accounts for uneven team sizes by adjusting Elo ratings.
  * @param {Object} db - Database connection
  * @param {string[]} team1 - Array of player IDs for team 1
  * @param {string[]} team2 - Array of player IDs for team 2
  * @returns {Promise<number>} - Probability (0-1) that team1 beats team2
  */
-async function calculateWinProbability(db,team1, team2) {
-  // Helper to get winrate for a player vs a rival
-  async function getWinrate(player, rival) {
+async function calculateWinProbability(db, team1, team2) {
+  const team1Size = team1.length;
+  const team2Size = team2.length;
 
-    const stats = await getStatsAsync(db, [rival], 'rivals', player);
-    const rivalStats = stats.players?.[rival];
-    if (!rivalStats || rivalStats.total === 0) return 0.5; // default to 50%
-    return rivalStats.wins / rivalStats.total;
-  }
+  // Method 1: Elo-based probability with team size adjustment
+  const team1Elo = team1.reduce((sum, id) => sum + getPlayerElo(db, id), 0) / team1Size;
+  const team2Elo = team2.reduce((sum, id) => sum + getPlayerElo(db, id), 0) / team2Size;
 
-  // Step 1: For each player in team1, get their winrate vs each player in team2
-  let logits = [];
+  // Adjust for team size differences - each extra player provides ~250 Elo advantage
+  const sizeAdvantage = (team1Size - team2Size) * 250;
+  const adjustedTeam1Elo = team1Elo + sizeAdvantage;
+
+  const eloProbability = 1 / (1 + Math.pow(10, (team2Elo - adjustedTeam1Elo) / 400));
+
+  // Method 2: Historical win rate-based probability
+  let historicalLogits = [];
+  let hasHistoricalData = false;
+
   for (const p1 of team1) {
     for (const p2 of team2) {
-      const winrate = await getWinrate(p1, p2);
-      // Convert to logit (log-odds)
-      const logit = Math.log(winrate / (1 - winrate));
-      logits.push(logit);
+      const stats = await getStatsAsync(db, [p2], 'rivals', p1);
+      const rivalStats = stats.players?.[p2];
+      if (rivalStats && rivalStats.total > 0) {
+        const winrate = rivalStats.wins / rivalStats.total;
+        if (winrate > 0 && winrate < 1) { // Avoid log(0) issues
+          const logit = Math.log(winrate / (1 - winrate));
+          historicalLogits.push(logit);
+          hasHistoricalData = true;
+        }
+      }
     }
   }
 
-  // Step 2: Aggregate team advantage (average logit)
-  const teamAdvantage = logits.reduce((a, b) => a + b, 0) / logits.length;
+  let historicalProbability = 0.5; // default
+  if (hasHistoricalData && historicalLogits.length > 0) {
+    const teamAdvantage = historicalLogits.reduce((a, b) => a + b, 0) / historicalLogits.length;
+    historicalProbability = 1 / (1 + Math.exp(-teamAdvantage));
 
-  // Step 3: Convert back to win probability
-  const probability = 1 / (1 + Math.exp(-teamAdvantage));
-  return probability;
+    // Adjust historical probability for team size differences
+    const sizeMultiplier = Math.pow(1.2, team1Size - team2Size); // 20% advantage per extra player
+    historicalProbability = Math.min(0.95, Math.max(0.05, historicalProbability * sizeMultiplier));
+  }
+
+  // Combine both methods: weight Elo more heavily when historical data is limited
+  const historicalWeight = Math.min(historicalLogits.length / 10, 0.5); // Max 50% weight for historical data
+  const eloWeight = 1 - historicalWeight;
+
+  const combinedProbability = (eloProbability * eloWeight) + (historicalProbability * historicalWeight);
+
+  return combinedProbability;
 }
 
 
@@ -284,6 +308,10 @@ function updateEloForMatches(db, recalculateAll = false) {
     const team1Elo = team1.reduce((sum, id) => sum + getPlayerElo(db, id), 0) / team1.length;
     const team2Elo = team2.reduce((sum, id) => sum + getPlayerElo(db, id), 0) / team2.length;
 
+    // Adjust for team size differences in Elo calculation
+    const sizeAdvantage = (team1.length - team2.length) * 250;
+    const adjustedTeam1Elo = team1Elo + sizeAdvantage;
+
     // Determine winner (check from one player's perspective)
     const samplePlayer = team1[0];
     const result = db.prepare(`
@@ -298,7 +326,7 @@ function updateEloForMatches(db, recalculateAll = false) {
     const team1Won = result.win === 1;
 
     // Calculate Elo changes
-    const eloChange = calculateEloChange(team1Elo, team2Elo, team1Won ? 1 : 0);
+    const eloChange = calculateEloChange(adjustedTeam1Elo, team2Elo, team1Won ? 1 : 0);
     const team1Change = eloChange;
     const team2Change = -eloChange;
 

@@ -189,10 +189,9 @@ async function calculateWinProbability(db,team1, team2) {
  * @param {string[]} team2 
  * @returns {number[]}
  */
-async function getScore(db, team1, team2) {
-  const team1Key = team1.join(',');
-  const team2Key = team2.join(',');
-  const teamMatchId = `${team1Key} vs ${team2Key}`;
+async function getWins(db, team1, team2) {
+  const sortedTeams = [team1, team2].sort((a, b) => a.join(',').localeCompare(b.join(',')))
+  const teamMatchId = sortedTeams.map(t => t.join(',')).join(' vs ');
   
   const perspectivePlayerId = team1[0];
 
@@ -217,7 +216,7 @@ module.exports = {
   computeAndUpdateTeamMatchIds,
   crawlPlayerMatches,
   getStats,
-  getScore,
+  getWins,
   getStatsAsync,
   calculateWinProbability
 };

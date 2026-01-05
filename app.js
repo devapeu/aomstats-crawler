@@ -2,7 +2,7 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const app = express();
 const cors = require('cors');
-const { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats, calculateWinProbability } = require('./dbHelpers');
+const { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats, getWins, calculateWinProbability } = require('./dbHelpers');
 const PLAYERS = require('./players');
 const cron = require('node-cron');
 
@@ -166,8 +166,6 @@ app.get('/winstreak/:profile_id', (req, res) => {
     ON g.profile_id = s.profile_id AND g.loss_group = s.loss_group;
   `).all(req.params.profile_id, req.params.profile_id);
 
-  console.log(query)
-
   if (!query.length) {
     return res.json({ message: 'Unable to fetch data for this player' });
   }
@@ -272,16 +270,16 @@ app.post('/matchup', async (req, res) => {
     const team2Str = team2.map(String);
 
     const probability = await calculateWinProbability(db, team1Str, team2Str);
-    const [team1Score, team2Score] = await getScore(db, team1Str, team2Str);
+    const [team1Wins, team2Wins] = await getWins(db, team1Str, team2Str);
 
-    const team1Probability = Math.round(probability * 10000) / 100;
-    const team2Probability = 100 - team1Probability;
+    const team2Probability = Math.round(probability * 10000) / 100;
+    const team1Probability = 100 - team2Probability;
 
     res.json({
       code: 200,
       data: {
-        [team1Str.join(',')]: { score: team1Score, probability: team1Probability },
-        [team2Str.join(',')]: { score: team2Score, probability: team2Probability },
+        [team1Str.join(',')]: { wins: team1Wins, probability: team1Probability },
+        [team2Str.join(',')]: { wins: team2Wins, probability: team2Probability },
       }
     });
 

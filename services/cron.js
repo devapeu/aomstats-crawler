@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const fs = require('fs');
 const { crawlPlayerMatches } = require('../dbHelpers');
-const { db, playerIds, insertMatches, computeAndUpdateTeamMatchIds } = require('./database');
+const { db, playerIds, insertMatches, computeAndUpdateTeamMatchIds, updateEloForMatches } = require('./database');
 
 cron.schedule('0 9 * * *', async () => { // runs at 5 am EST
   try {
@@ -25,6 +25,7 @@ cron.schedule('0 9 * * *', async () => { // runs at 5 am EST
 
     insertMatches(allMatches);
     computeAndUpdateTeamMatchIds();
+    updateEloForMatches();
 
     console.log(`Fetched and saved ${allMatches.length} matches`);
   } catch (err) {

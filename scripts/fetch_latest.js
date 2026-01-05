@@ -7,7 +7,8 @@ const playerIds = Object.keys(PLAYERS);
 const { 
   insertMatches, 
   computeAndUpdateTeamMatchIds,
-  crawlPlayerMatches
+  crawlPlayerMatches,
+  updateEloForMatches
  } = require('../dbHelpers');
 
 const path = require('path');
@@ -37,6 +38,7 @@ const db = new Database(dbPath);
 
   insertMatches(db, allMatches);
   computeAndUpdateTeamMatchIds(db);
+  updateEloForMatches(db);
 
   console.log(`Fetched and saved ${allMatches.length} matches`);
 })();

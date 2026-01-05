@@ -78,25 +78,30 @@ const crawlPlayerMatches = async (profileId, beforeLimit) => {
   return allMatches;
 }
 
-function getStats(db, players, type) {
+function getStats(db, players, type, getProfileId) {
   return (req, res) => {
+    const profileId = getProfileId(req);
     const after = req.query.after ?? 0;
+
     const rows = db.prepare(`
       SELECT match_id, team_match_id, win
       FROM matches
       WHERE profile_id = ? AND startgametime > ?
-    `).all(req.params.profile_id, after);
+    `).all(profileId, after);
 
     if (!rows.length) {
       return res.json({ message: 'Unable to fetch data for this player' });
     }
 
-    const stats = {}; // { partnerId/rivalId: { wins, total } }
+    const stats = {};
     let total = 0;
 
     rows.forEach(row => {
-      const [team1, team2] = row.team_match_id.split(" vs ").map(t => t.split(","));
-      const isTeam1 = team1.includes(req.params.profile_id);
+      const [team1, team2] = row.team_match_id
+        .split(" vs ")
+        .map(t => t.split(","));
+
+      const isTeam1 = team1.includes(profileId);
       const playerTeam = isTeam1 ? team1 : team2;
       const otherTeam  = isTeam1 ? team2 : team1;
       const targetTeam = type === 'partners' ? playerTeam : otherTeam;
@@ -104,20 +109,20 @@ function getStats(db, players, type) {
       if (!targetTeam) return;
       total++;
 
-      // Remove self if partner stats
       const filtered = type === 'partners'
-        ? targetTeam.filter(p => p !== req.params.profile_id)
+        ? targetTeam.filter(p => p !== profileId)
         : targetTeam;
 
       filtered.forEach(id => {
         if (!players.includes(id)) return;
+
         if (!stats[id]) stats[id] = { wins: 0, total: 0 };
         stats[id].total++;
 
-        // For partners: count win if row.win === 1
-        // For rivals: count win if row.win === 0 (i.e. they lost)
-        const won = (type === 'partners' && row.win === 1) ||
-                    (type === 'rivals' && row.win === 0);
+        const won =
+          (type === 'partners' && row.win === 1) ||
+          (type === 'rivals' && row.win === 0);
+
         if (won) stats[id].wins++;
       });
     });
@@ -126,4 +131,92 @@ function getStats(db, players, type) {
   };
 }
 
-module.exports = { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats };
+// Async wrapper for getStats to use with await
+function getStatsAsync(db, players, type, profileId) {
+  return new Promise((resolve, reject) => {
+    const req = {
+      params: { profile_id: profileId },
+      query: {}
+    };
+    const res = {
+      json: (data) => resolve(data)
+    };
+    getStats(db, players, type, () => profileId)(req, res);
+  });
+}
+
+/**
+ * Calculate the win probability for team1 vs team2 using log-odds.
+ * @param {Object} db - Database connection
+ * @param {string[]} team1 - Array of player IDs for team 1
+ * @param {string[]} team2 - Array of player IDs for team 2
+ * @returns {Promise<number>} - Probability (0-1) that team1 beats team2
+ */
+async function calculateWinProbability(db,team1, team2) {
+  // Helper to get winrate for a player vs a rival
+  async function getWinrate(player, rival) {
+
+    const stats = await getStatsAsync(db, [rival], 'rivals', player);
+    const rivalStats = stats.players?.[rival];
+    if (!rivalStats || rivalStats.total === 0) return 0.5; // default to 50%
+    return rivalStats.wins / rivalStats.total;
+  }
+
+  // Step 1: For each player in team1, get their winrate vs each player in team2
+  let logits = [];
+  for (const p1 of team1) {
+    for (const p2 of team2) {
+      const winrate = await getWinrate(p1, p2);
+      // Convert to logit (log-odds)
+      const logit = Math.log(winrate / (1 - winrate));
+      logits.push(logit);
+    }
+  }
+
+  // Step 2: Aggregate team advantage (average logit)
+  const teamAdvantage = logits.reduce((a, b) => a + b, 0) / logits.length;
+
+  // Step 3: Convert back to win probability
+  const probability = 1 / (1 + Math.exp(-teamAdvantage));
+  return probability;
+}
+
+
+/**
+ * Fetch the amount of wins and losses in a given matchup
+ * @param {Object} db 
+ * @param {string[]} team1 
+ * @param {string[]} team2 
+ * @returns {number[]}
+ */
+async function getWins(db, team1, team2) {
+  const sortedTeams = [team1, team2].sort((a, b) => a.join(',').localeCompare(b.join(',')))
+  const teamMatchId = sortedTeams.map(t => t.join(',')).join(' vs ');
+  
+  const perspectivePlayerId = team1[0];
+
+  const rows = db.prepare(`
+    SELECT win FROM matches
+    WHERE team_match_id = ? AND profile_id = ?
+  `).all(teamMatchId, perspectivePlayerId);
+
+  let team1Wins = 0;
+  let team2Wins = 0;
+
+  for (const { win } of rows) {
+    if (win === 1) team1Wins++;
+    else team2Wins++;
+  }
+
+  return [team1Wins, team2Wins];
+}
+
+module.exports = { 
+  insertMatches,
+  computeAndUpdateTeamMatchIds,
+  crawlPlayerMatches,
+  getStats,
+  getWins,
+  getStatsAsync,
+  calculateWinProbability
+};

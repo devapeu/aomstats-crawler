@@ -1,9 +1,8 @@
 const express = require('express');
-//const fetch = require('node-fetch'); // add node-fetch if using Node <18
 const Database = require('better-sqlite3');
 const app = express();
 const cors = require('cors');
-const { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats } = require('./dbHelpers');
+const { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats, getWins, calculateWinProbability } = require('./dbHelpers');
 const PLAYERS = require('./players');
 const cron = require('node-cron');
 
@@ -92,41 +91,6 @@ app.get('/fetch/:profileId', async (req, res) => {
   res.send(`Fetched and saved ${matches.length} matches for profile ${profileId}`);
 });
 
-app.get('/teams/:team_id', (req, res) => {
-  const teamId = req.params.team_id;
-  if (!teamId.includes(' vs ')) {
-    return res.status(400).json({ error: 'Invalid team_id format' });
-  }
-
-  // Split the team_id into two teams of player IDs
-  const [team1Str, team2Str] = teamId.split(' vs ');
-  const team1 = team1Str.split(',').map(id => id.trim());
-  const team2 = team2Str.split(',').map(id => id.trim());
-
-  // Get the first player of team1 to determine perspective for win
-  const firstPlayerId = team1[0];
-
-  // Query DB for all matches with this team_match_id and profile_id
-  const rows = db.prepare(`
-    SELECT win FROM matches
-    WHERE team_match_id = ? AND profile_id = ?
-  `).all(teamId, firstPlayerId);
-
-  if (!rows.length) {
-    return res.json({ teams: null, message: 'No matches found for this team combination' });
-  }
-
-  // Count wins and losses for this player on this team_match_id
-  const playerWins = rows.filter(r => r.win === 1).length;
-  const playerLosses = rows.filter(r => r.win === 0).length;
-
-  const response = {};
-  response[team1] = playerWins;
-  response[team2] = playerLosses;
-
-  res.json(response);
-});
-
 app.get('/gods/:profile_id', (req, res) => {
   const after = req.query.after ?? 0;
   const rows = db.prepare(`
@@ -157,8 +121,15 @@ app.get('/gods/:profile_id', (req, res) => {
   res.json(response);
 })
 
-app.get('/partners/:profile_id', getStats(db, playerIds, 'partners'));
-app.get('/rivals/:profile_id', getStats(db, playerIds, 'rivals'));
+app.get(
+  '/partners/:profile_id',
+  getStats(db, playerIds, 'partners', req => req.params.profile_id)
+);
+
+app.get(
+  '/rivals/:profile_id',
+  getStats(db, playerIds, 'rivals', req => req.params.profile_id)
+);
 
 app.get('/winstreak/:profile_id', (req, res) => {
   const query = db.prepare(`
@@ -194,8 +165,6 @@ app.get('/winstreak/:profile_id', (req, res) => {
   LEFT JOIN grouped g
     ON g.profile_id = s.profile_id AND g.loss_group = s.loss_group;
   `).all(req.params.profile_id, req.params.profile_id);
-
-  console.log(query)
 
   if (!query.length) {
     return res.json({ message: 'Unable to fetch data for this player' });
@@ -283,6 +252,42 @@ app.post('/send-planner-to-discord', validateApiKey, async (req, res) => {
     res.status(500).json({
       code: 500,
       message: `Server error: ${err.message}`
+    });
+  }
+});
+
+app.post('/matchup', async (req, res) => {
+  try {
+    const { team1, team2 } = req.body;
+    if (!Array.isArray(team1) || !Array.isArray(team2) || team1.length === 0 || team2.length === 0) {
+      return res.status(400).json({
+        code: 400,
+        message: 'Both team1 and team2 must be non-empty arrays.'
+      });
+    }
+    // Coerce all IDs to strings
+    const team1Str = team1.map(String);
+    const team2Str = team2.map(String);
+
+    const probability = await calculateWinProbability(db, team1Str, team2Str);
+    const [team1Wins, team2Wins] = await getWins(db, team1Str, team2Str);
+
+    const team2Probability = Math.round(probability * 10000) / 100;
+    const team1Probability = 100 - team2Probability;
+
+    res.json({
+      code: 200,
+      data: {
+        [team1Str.join(',')]: { wins: team1Wins, probability: team1Probability },
+        [team2Str.join(',')]: { wins: team2Wins, probability: team2Probability },
+      }
+    });
+
+  } catch (e) {
+    console.error('Error computing matchup data:', e);
+    res.status(500).json({
+      code: 500,
+      message: err.message || 'Internal server error.'
     });
   }
 });

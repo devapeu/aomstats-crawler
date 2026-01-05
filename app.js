@@ -1,5 +1,4 @@
 const express = require('express');
-//const fetch = require('node-fetch'); // add node-fetch if using Node <18
 const Database = require('better-sqlite3');
 const app = express();
 const cors = require('cors');
@@ -90,41 +89,6 @@ app.get('/fetch/:profileId', async (req, res) => {
   const matches = await crawlPlayerMatches(profileId);
   insertMatches(matches);
   res.send(`Fetched and saved ${matches.length} matches for profile ${profileId}`);
-});
-
-app.get('/teams/:team_id', (req, res) => {
-  const teamId = req.params.team_id;
-  if (!teamId.includes(' vs ')) {
-    return res.status(400).json({ error: 'Invalid team_id format' });
-  }
-
-  // Split the team_id into two teams of player IDs
-  const [team1Str, team2Str] = teamId.split(' vs ');
-  const team1 = team1Str.split(',').map(id => id.trim());
-  const team2 = team2Str.split(',').map(id => id.trim());
-
-  // Get the first player of team1 to determine perspective for win
-  const firstPlayerId = team1[0];
-
-  // Query DB for all matches with this team_match_id and profile_id
-  const rows = db.prepare(`
-    SELECT win FROM matches
-    WHERE team_match_id = ? AND profile_id = ?
-  `).all(teamId, firstPlayerId);
-
-  if (!rows.length) {
-    return res.json({ teams: null, message: 'No matches found for this team combination' });
-  }
-
-  // Count wins and losses for this player on this team_match_id
-  const playerWins = rows.filter(r => r.win === 1).length;
-  const playerLosses = rows.filter(r => r.win === 0).length;
-
-  const response = {};
-  response[team1] = playerWins;
-  response[team2] = playerLosses;
-
-  res.json(response);
 });
 
 app.get('/gods/:profile_id', (req, res) => {
@@ -294,8 +258,7 @@ app.post('/send-planner-to-discord', validateApiKey, async (req, res) => {
   }
 });
 
-// Endpoint to calculate team odds
-app.post('/team-odds', async (req, res) => {
+app.post('/matchup', async (req, res) => {
   try {
     const { team1, team2 } = req.body;
     if (!Array.isArray(team1) || !Array.isArray(team2) || team1.length === 0 || team2.length === 0) {
@@ -307,14 +270,23 @@ app.post('/team-odds', async (req, res) => {
     // Coerce all IDs to strings
     const team1Str = team1.map(String);
     const team2Str = team2.map(String);
+
     const probability = await calculateWinProbability(db, team1Str, team2Str);
+    const [team1Score, team2Score] = await getScore(db, team1Str, team2Str);
+
+    const team1Probability = Math.round(probability * 10000) / 100;
+    const team2Probability = 100 - team1Probability;
+
     res.json({
       code: 200,
-      probability,
-      percent: Math.round(probability * 10000) / 100 // rounded to 2 decimals
+      data: {
+        [team1Str.join(',')]: { score: team1Score, probability: team1Probability },
+        [team2Str.join(',')]: { score: team2Score, probability: team2Probability },
+      }
     });
-  } catch (err) {
-    console.error('Error calculating team odds:', err);
+
+  } catch (e) {
+    console.error('Error computing matchup data:', e);
     res.status(500).json({
       code: 500,
       message: err.message || 'Internal server error.'

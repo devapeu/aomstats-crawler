@@ -181,4 +181,43 @@ async function calculateWinProbability(db,team1, team2) {
   return probability;
 }
 
-module.exports = { insertMatches, computeAndUpdateTeamMatchIds, crawlPlayerMatches, getStats, getStatsAsync, calculateWinProbability };
+
+/**
+ * Fetch the amount of wins and losses in a given matchup
+ * @param {Object} db 
+ * @param {string[]} team1 
+ * @param {string[]} team2 
+ * @returns {number[]}
+ */
+async function getScore(db, team1, team2) {
+  const team1Key = team1.join(',');
+  const team2Key = team2.join(',');
+  const teamMatchId = `${team1Key} vs ${team2Key}`;
+  
+  const perspectivePlayerId = team1[0];
+
+  const rows = db.prepare(`
+    SELECT win FROM matches
+    WHERE team_match_id = ? AND profile_id = ?
+  `).all(teamMatchId, perspectivePlayerId);
+
+  let team1Wins = 0;
+  let team2Wins = 0;
+
+  for (const { win } of rows) {
+    if (win === 1) team1Wins++;
+    else team2Wins++;
+  }
+
+  return [team1Wins, team2Wins];
+}
+
+module.exports = { 
+  insertMatches,
+  computeAndUpdateTeamMatchIds,
+  crawlPlayerMatches,
+  getStats,
+  getScore,
+  getStatsAsync,
+  calculateWinProbability
+};

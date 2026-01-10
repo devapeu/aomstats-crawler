@@ -1,3 +1,11 @@
+const PLAYERS = require('./players');
+const { 
+  ELO_DEFAULT, 
+  ELO_SIZE_ADVANTAGE_PER_PLAYER, 
+  ELO_K_FACTOR, 
+  WIN_PROB_SIZE_MULTIPLIER_BASE, 
+  ELO_DIVISOR } = require('./config/eloConfig');
+
 const insertMatches = (db, matches) => {
   const insertMatch = db.prepare(`
     INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, win, god, mapname, raw_data, team_match_id)
@@ -162,10 +170,10 @@ async function calculateWinProbability(db, team1, team2) {
   const team2Elo = team2.reduce((sum, id) => sum + getPlayerElo(db, id), 0) / team2Size;
 
   // Adjust for team size differences - each extra player provides ~250 Elo advantage
-  const sizeAdvantage = (team1Size - team2Size) * 250;
+  const sizeAdvantage = (team1Size - team2Size) * ELO_SIZE_ADVANTAGE_PER_PLAYER;
   const adjustedTeam1Elo = team1Elo + sizeAdvantage;
 
-  const eloProbability = 1 / (1 + Math.pow(10, (team2Elo - adjustedTeam1Elo) / 400));
+  const eloProbability = 1 / (1 + Math.pow(10, (team2Elo - adjustedTeam1Elo) / ELO_DIVISOR));
 
   // Method 2: Historical win rate-based probability
   let historicalLogits = [];
@@ -192,7 +200,7 @@ async function calculateWinProbability(db, team1, team2) {
     historicalProbability = 1 / (1 + Math.exp(-teamAdvantage));
 
     // Adjust historical probability for team size differences
-    const sizeMultiplier = Math.pow(1.2, team1Size - team2Size); // 20% advantage per extra player
+    const sizeMultiplier = Math.pow(WIN_PROB_SIZE_MULTIPLIER_BASE, team1Size - team2Size); // 20% advantage per extra player
     historicalProbability = Math.min(0.95, Math.max(0.05, historicalProbability * sizeMultiplier));
   }
 
@@ -241,7 +249,7 @@ async function getWins(db, team1, team2) {
 function getPlayerElo(db, profileId) {
   const stmt = db.prepare('SELECT elo FROM player_elo WHERE profile_id = ?');
   const result = stmt.get(profileId);
-  return result ? result.elo : 1500;
+  return result ? result.elo : ELO_DEFAULT;
 }
 
 /**
@@ -259,8 +267,8 @@ function updatePlayerElo(db, profileId, newElo) {
 /**
  * Calculate Elo change using standard formula
  */
-function calculateEloChange(ratingA, ratingB, actualScoreA, k = 32) {
-  const expectedScoreA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+function calculateEloChange(ratingA, ratingB, actualScoreA, k = ELO_K_FACTOR) {
+  const expectedScoreA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / ELO_DIVISOR));
   return Math.round(k * (actualScoreA - expectedScoreA));
 }
 
@@ -304,12 +312,18 @@ function updateEloForMatches(db, recalculateAll = false) {
     const team1 = team1Str.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
     const team2 = team2Str.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
 
+    // Ignore matches with players not included in the pool
+    if ([...team1, ...team2].some(id => !PLAYERS[id])) continue;
+
+    // Ignore 1v1 games
+    if (team1.length === 1 && team2.length === 1) continue;
+
     // Get average Elo for each team
     const team1Elo = team1.reduce((sum, id) => sum + getPlayerElo(db, id), 0) / team1.length;
     const team2Elo = team2.reduce((sum, id) => sum + getPlayerElo(db, id), 0) / team2.length;
 
     // Adjust for team size differences in Elo calculation
-    const sizeAdvantage = (team1.length - team2.length) * 250;
+    const sizeAdvantage = (team1.length - team2.length) * ELO_SIZE_ADVANTAGE_PER_PLAYER;
     const adjustedTeam1Elo = team1Elo + sizeAdvantage;
 
     // Determine winner (check from one player's perspective)

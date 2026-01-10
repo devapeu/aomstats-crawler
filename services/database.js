@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const { insertMatches, computeAndUpdateTeamMatchIds, updateEloForMatches, getPlayerElo } = require('../dbHelpers');
 const PLAYERS = require('../players');
+const { ELO_DEFAULT } = require('./config/eloConfig');
 
 // Open or create DB
 const db = new Database('./db.sqlite');
@@ -25,7 +26,7 @@ db.exec(`
 db.exec(`
   CREATE TABLE IF NOT EXISTS player_elo (
     profile_id INTEGER PRIMARY KEY,
-    elo REAL DEFAULT 1500,
+    elo REAL DEFAULT ${ELO_DEFAULT}},
     last_updated INTEGER
   )
 `);

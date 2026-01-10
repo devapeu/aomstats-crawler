@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { calculateWinProbability, getWins } = require('../dbHelpers');
-const { db } = require('../services/database');
+const { calculateWinProbability, getWins } = require('../services/matchup');
+const { db } = require('../database');
 
 router.post('/matchup', async (req, res) => {
   try {

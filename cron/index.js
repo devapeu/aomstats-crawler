@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const fs = require('fs');
-const { crawlPlayerMatches } = require('../dbHelpers');
-const { db, playerIds, insertMatches, computeAndUpdateTeamMatchIds, updateEloForMatches } = require('./database');
+const { crawlPlayerMatches } = require('../services/aomstats');
+const { db, playerIds, insertMatches, computeAndUpdateTeamMatchIds, updateEloForMatches } = require('../database');
 
 cron.schedule('0 9 * * *', async () => { // runs at 5 am EST
   try {

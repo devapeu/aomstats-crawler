@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { crawlPlayerMatches } = require('../dbHelpers');
-const { getStats } = require('../dbHelpers');
-const { db, playerIds, insertMatches } = require('../services/database');
-const { getPlayerElo } = require('../dbHelpers');
+const { crawlPlayerMatches } = require('../services/aomstats');
+const { getStats } = require('../controllers/players');
+const { db, playerIds, insertMatches } = require('../database');
+const { getPlayerElo } = require('../models/elo');
 
 router.get('/fetch/:profileId', async (req, res) => {
   const { profileId } = req.params;

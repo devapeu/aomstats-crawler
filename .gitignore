@@ -3,3 +3,4 @@ node_modules
 matches.csv
 ./players.js
 ./db.sqlite
+.env

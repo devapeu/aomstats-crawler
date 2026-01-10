@@ -1,7 +1,7 @@
 const path = require('path');
 const Database = require('better-sqlite3');
-const { updateEloForMatches } = require('../dbHelpers');
-const { ELO_DEFAULT } = require('./config/eloConfig');
+const { updateEloForMatches } = require('../services/elo');
+const { ELO_DEFAULT } = require('../config/eloConfig');
 
 const dbPath = path.resolve(__dirname, '..', 'db.sqlite');
 const db = new Database(dbPath);

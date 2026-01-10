@@ -9,7 +9,7 @@ const { DISCORD_WEBHOOK_URL } = require('../config');
 router.post('/send-planner-to-discord', validateApiKey, async (req, res) => {
   try {
     // Validate request body
-    if (!req.body.imageBase64 || !req.body.message) {
+    if (!req.body.imageBase64) {
       return res.status(400).json({
         code: 400,
         message: 'Missing required fields: imageBase64 and message'
@@ -25,7 +25,7 @@ router.post('/send-planner-to-discord', validateApiKey, async (req, res) => {
       });
     }
 
-    const { imageBase64, message } = req.body;
+    const { imageBase64, message = '' } = req.body;
 
     // Convert base64 to buffer
     let imageBuffer;

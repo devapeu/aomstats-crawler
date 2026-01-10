@@ -4,11 +4,12 @@ const Database = require('better-sqlite3');
 const PLAYERS = require('../players');
 const playerIds = Object.keys(PLAYERS);
 
-const { 
-  insertMatches, 
-  computeAndUpdateTeamMatchIds,
-  crawlPlayerMatches
- } = require('../dbHelpers');
+const {
+  insertMatches,
+  computeAndUpdateTeamMatchIds
+} = require('../models/matches');
+const { crawlPlayerMatches } = require('../services/aomstats');
+const { updateEloForMatches } = require('../services/elo');
 
 const path = require('path');
 const Database = require('better-sqlite3');
@@ -37,6 +38,7 @@ const db = new Database(dbPath);
 
   insertMatches(db, allMatches);
   computeAndUpdateTeamMatchIds(db);
+  updateEloForMatches(db);
 
   console.log(`Fetched and saved ${allMatches.length} matches`);
 })();

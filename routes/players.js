@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { crawlPlayerMatches } = require('../dbHelpers');
-const { getStats } = require('../dbHelpers');
-const { db, playerIds, insertMatches } = require('../services/database');
+const { crawlPlayerMatches } = require('../services/aomstats');
+const { getStats } = require('../controllers/players');
+const { db, playerIds, insertMatches } = require('../database');
+const { getPlayerElo } = require('../models/elo');
 
 router.get('/fetch/:profileId', async (req, res) => {
   const { profileId } = req.params;
@@ -92,6 +93,16 @@ router.get('/winstreak/:profile_id', (req, res) => {
 
   res.json({
     winstreak: query[0].current_streak,
+  });
+});
+
+router.get('/elo/:profile_id', (req, res) => {
+  const profileId = req.params.profile_id;
+  const elo = getPlayerElo(db, profileId);
+  
+  res.json({
+    profile_id: profileId,
+    elo: elo
   });
 });
 

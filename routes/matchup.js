@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { calculateWinProbability, getWins } = require('../dbHelpers');
-const { db } = require('../services/database');
+const { calculateWinProbability, getWins } = require('../services/matchup');
+const { db } = require('../database');
 
 router.post('/matchup', async (req, res) => {
   try {
@@ -19,8 +19,8 @@ router.post('/matchup', async (req, res) => {
     const probability = await calculateWinProbability(db, team1Str, team2Str);
     const [team1Wins, team2Wins] = await getWins(db, team1Str, team2Str);
 
-    const team2Probability = Math.round(probability * 10000) / 100;
-    const team1Probability = 100 - team2Probability;
+    const team1Probability = Math.round(probability * 10000) / 100;
+    const team2Probability = 100 - team1Probability;
 
     res.json({
       code: 200,

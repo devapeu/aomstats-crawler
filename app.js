@@ -3,7 +3,7 @@ const app = express();
 const cors = require('cors');
 const { PORT } = require('./config');
 
-require('./services/cron'); // Start the cron job
+require('./cron'); // Start the cron job
 
 app.use(cors({
   origin: '*'

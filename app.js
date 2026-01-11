@@ -16,6 +16,7 @@ app.use(express.urlencoded({ limit: '50mb' }));
 app.use('/', require('./routes/players'));
 app.use('/', require('./routes/discord'));
 app.use('/', require('./routes/matchup'));
+app.use('/', require('./routes/stats'));
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

@@ -7,7 +7,7 @@ router.get('/stats', (req, res) => {
   // Maps
   const maps = db.prepare(`
     SELECT
-      COUNT(*) AS count,
+      COUNT(DISTINCT match_id) AS count,
       mapname
     FROM matches
     WHERE mapname LIKE 'rm_%'

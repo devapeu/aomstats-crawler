@@ -16,6 +16,29 @@ router.get('/stats', (req, res) => {
     LIMIT 10
   `).all()
 
+  // Matchups
+  const matchups = db.prepare(`
+    SELECT
+      COUNT(DISTINCT match_id) AS count,
+      team_match_id
+    FROM matches
+    GROUP BY team_match_id
+    ORDER BY count DESC
+    LIMIT 20
+  `).all();
+
+  let filteredMatchups = [];
+  matchups.forEach(row => {
+    const [t1, t2] = row.team_match_id.split(" vs ").map(t => t.split(","));
+    if (t1.length === 1 && t2.length === 1 || t1[0] === " ") return;
+    filteredMatchups.push( {
+      team_match_id: row.team_match_id,
+      count: row.count,
+      team1: t1,
+      team2: t2,
+    })
+  })
+
   // Elo
   const playerKeys = Object.keys(PLAYERS)
 
@@ -32,7 +55,7 @@ router.get('/stats', (req, res) => {
     `).all(...playerKeys)
   }
 
-  res.json({ maps, elo })
+  res.json({ maps, elo, matchups: filteredMatchups })
 })
 
 module.exports = router;

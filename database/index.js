@@ -32,6 +32,25 @@ db.exec(`
   )
 `);
 
+db.exec("PRAGMA foreign_keys = ON");
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tournaments (
+    tournament_id INTEGER PRIMARY KEY,
+    name TEXT,
+    is_open INTEGER
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tournament_matches (
+    tournament_id INTEGER,
+    match_id INTEGER,
+    FOREIGN KEY (tournament_id) REFERENCES tournaments(tournament_id),
+    PRIMARY KEY (tournament_id, match_id)
+  )
+`)
+
 module.exports = {
   db,
   playerIds,

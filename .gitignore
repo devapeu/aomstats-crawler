@@ -6,3 +6,4 @@ players.js
 .env
 /backups
 /cron_errors.log
+.idea

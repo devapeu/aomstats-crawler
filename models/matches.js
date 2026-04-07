@@ -1,3 +1,4 @@
+const {updateEloForMatches} = require("../database");
 const insertMatches = (db, matches) => {
   const insertMatch = db.prepare(`
     INSERT OR IGNORE INTO matches (match_id, profile_id, description, startgametime, win, god, mapname, raw_data, team_match_id)
@@ -27,6 +28,19 @@ const insertMatches = (db, matches) => {
   insertMany(matches);
 };
 
+const deleteAsymmetricalMatches = (db) => {
+  const deleteMatches = db.prepare(`
+      DELETE FROM matches
+      WHERE match_id IN (
+        SELECT match_id
+        FROM matches
+        WHERE json_extract(raw_data, '$.team') = 2
+      )
+    `);
+
+  deleteMatches.run();
+}
+
 const computeAndUpdateTeamMatchIds = (db) => {
   const matchIds = db.prepare('SELECT DISTINCT match_id FROM matches').all();
 
@@ -52,5 +66,6 @@ const computeAndUpdateTeamMatchIds = (db) => {
 
 module.exports = {
   insertMatches,
+  deleteAsymmetricalMatches,
   computeAndUpdateTeamMatchIds
 };

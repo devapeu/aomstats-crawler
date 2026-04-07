@@ -1,5 +1,5 @@
 const Database = require('better-sqlite3');
-const { insertMatches, computeAndUpdateTeamMatchIds } = require('../models/matches');
+const { insertMatches, deleteAsymmetricalMatches, computeAndUpdateTeamMatchIds } = require('../models/matches');
 const { updateEloForMatches, getPlayerElo } = require('../services/elo');
 const PLAYERS = require('../players');
 const { ELO_DEFAULT } = require('../config/eloConfig');
@@ -55,6 +55,7 @@ module.exports = {
   db,
   playerIds,
   insertMatches: (matches) => insertMatches(db, matches),
+  deleteAsymmetricalMatches: () => deleteAsymmetricalMatches(db),
   computeAndUpdateTeamMatchIds: () => computeAndUpdateTeamMatchIds(db),
   updateEloForMatches: () => updateEloForMatches(db),
   getPlayerElo: (profileId) => getPlayerElo(db, profileId),

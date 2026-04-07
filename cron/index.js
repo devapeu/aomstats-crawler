@@ -2,7 +2,13 @@ const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
 const { crawlPlayerMatches } = require('../services/aomstats');
-const { db, playerIds, insertMatches, computeAndUpdateTeamMatchIds, updateEloForMatches } = require('../database');
+const {
+  db,
+  playerIds,
+  insertMatches,
+  deleteAsymmetricalMatches,
+  computeAndUpdateTeamMatchIds,
+  updateEloForMatches } = require('../database');
 
 // Database backup cron job - runs weekly on Sunday at 9:30 AM (Server Time)
 cron.schedule('30 9 * * 0', () => {
@@ -78,6 +84,7 @@ cron.schedule('0 9 * * *', async () => { // runs at 5 am EST
     }
 
     insertMatches(allMatches);
+    deleteAsymmetricalMatches();
     computeAndUpdateTeamMatchIds();
     updateEloForMatches();
 

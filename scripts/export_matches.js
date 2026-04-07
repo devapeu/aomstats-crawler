@@ -8,7 +8,7 @@ const db = new Database(dbPath);
 
 // Updated stmt includes profile_id and win
 const stmt = db.prepare(`
-  SELECT profile_id, win, match_id, team_match_id 
+  SELECT profile_id, win, match_id, team_match_id, startgametime
   FROM matches 
   ORDER BY match_id
 `);
@@ -30,6 +30,7 @@ const result = Object.entries(matchesMap).map(([match_id, matchRows]) => {
   if (hasUnknownPlayer) return;
 
   let is1v1 = false;
+  let timestamp = matchRows[0].startgametime;
 
   const winners = matchRows
       .filter(r => r.win === 1)
@@ -41,8 +42,8 @@ const result = Object.entries(matchesMap).map(([match_id, matchRows]) => {
 
   if (losers.length === 1 && winners.length === 1) is1v1 = true;
 
-  return `${match_id},${winners.join("-")},${losers.join("-")},${is1v1}`;
+  return `${match_id},${winners.join("-")},${losers.join("-")},${timestamp},${is1v1}`;
 }).filter(Boolean);
 
-const header = "match_id,winners,losers,is_1v1";
+const header = "match_id,winners,losers,timestamp,is_1v1";
 fs.writeFileSync('matches.csv', [header, ...result].join("\n"), 'utf-8');

@@ -26,17 +26,23 @@ const result = Object.entries(matchesMap).map(([match_id, matchRows]) => {
   // skip corrupted team_match_id
   if (!matchRows[0].team_match_id || matchRows[0].team_match_id[0] === " " || matchRows[0].team_match_id.slice(-1) === " ") return;
 
-  // Sort players into winners and losers based on win column
+  const hasUnknownPlayer = matchRows.some(r => !PLAYERS[r.profile_id]);
+  if (hasUnknownPlayer) return;
+
+  let is1v1 = false;
+
   const winners = matchRows
-    .filter(r => r.win === 1)
-    .map(r => PLAYERS[r.profile_id] ?? r.profile_id);
+      .filter(r => r.win === 1)
+      .map(r => PLAYERS[r.profile_id]);
 
   const losers = matchRows
-    .filter(r => r.win === 0)
-    .map(r => PLAYERS[r.profile_id] ?? r.profile_id);
+      .filter(r => r.win === 0)
+      .map(r => PLAYERS[r.profile_id]);
 
-  return `${match_id},${winners.join("-")},${losers.join("-")}`;
+  if (losers.length === 1 && winners.length === 1) is1v1 = true;
+
+  return `${match_id},${winners.join("-")},${losers.join("-")},${is1v1}`;
 }).filter(Boolean);
 
-const header = "match_id,winners,losers";
+const header = "match_id,winners,losers,is_1v1";
 fs.writeFileSync('matches.csv', [header, ...result].join("\n"), 'utf-8');

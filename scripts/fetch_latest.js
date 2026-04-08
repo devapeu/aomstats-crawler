@@ -1,6 +1,3 @@
-const Database = require('better-sqlite3');
-//const fetch = require('node-fetch');
-
 const PLAYERS = require('../players');
 const playerIds = Object.keys(PLAYERS);
 

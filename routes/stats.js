@@ -2,6 +2,7 @@ const PLAYERS = require('../players');
 const express = require('express');
 const router = express.Router();
 const { db } = require('../database');
+const { exportAsCSV } = require('../services/export_csv');
 
 router.get('/stats', (req, res) => {
   // Maps
@@ -57,5 +58,17 @@ router.get('/stats', (req, res) => {
 
   res.json({ maps, elo, matchups: filteredMatchups })
 })
+
+router.get('/matches.csv', (req, res) => {
+  const csv = exportAsCSV();
+
+  const now = new Date();
+  const timestamp = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const filename = `${timestamp}_matches.csv`;
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(csv);
+});
 
 module.exports = router;

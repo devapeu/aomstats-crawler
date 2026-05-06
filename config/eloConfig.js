@@ -1,8 +1,8 @@
-const ELO_DEFAULT = 500;
-const ELO_SIZE_ADVANTAGE_PER_PLAYER = 250;
-const ELO_K_FACTOR = 4;
+const ELO_DEFAULT = 50;
+const ELO_SIZE_ADVANTAGE_PER_PLAYER = 0;
+const ELO_K_FACTOR = 5;
 const WIN_PROB_SIZE_MULTIPLIER_BASE = 1.2;
-const ELO_DIVISOR = 400;
+const ELO_DIVISOR = 40;
 
 module.exports = {
   ELO_DEFAULT,

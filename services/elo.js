@@ -9,7 +9,7 @@ const { getPlayerElo, updatePlayerElo } = require('../models/elo');
  * Calculate Elo change using standard formula
  */
 function calculateEloChange(ratingA, ratingB, actualScoreA, k = ELO_K_FACTOR) {
-  const expectedScoreA = 1 / (1 + Math.pow(10, (ratingB - ratingA) / ELO_DIVISOR));
+  const expectedScoreA = 1 / (1 + Math.pow(10, 5 * (ratingB - ratingA) / ELO_DIVISOR));
   return Math.round(k * (actualScoreA - expectedScoreA));
 }
 

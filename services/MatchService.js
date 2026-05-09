@@ -1,6 +1,6 @@
 const { MatchesRepo } = require('../models/matches');
 const { PlayerMatchRepo } = require('../models/matches');
-const { lookupPantheon } = require("../utils/pantheonLookup");
+const { GOD_TO_PANTHEON } = require("../utils/pantheonLookup");
 
 function isSkippable(m) {
     // invalidate unranked games, de-synced games and games under 6 minutes
@@ -85,8 +85,8 @@ const MatchService = {
                 const plainTeam1 = buildTeam(team0, p => `${p.profile_id}`);
                 const plainTeam2 = buildTeam(team1, p => `${p.profile_id}`);
 
-                const civTeam1 = buildTeam(team0,p => `${p.profile_id}[${lookupPantheon(p.god)}]`);
-                const civTeam2 = buildTeam(team1,p => `${p.profile_id}[${lookupPantheon(p.god)}]`);
+                const civTeam1 = buildTeam(team0,p => `${p.profile_id}[${GOD_TO_PANTHEON[p.god]}]`);
+                const civTeam2 = buildTeam(team1,p => `${p.profile_id}[${GOD_TO_PANTHEON[p.god]}]`);
 
                 const godTeam1 = buildTeam(team0,p => `${p.profile_id}[${p.god}]`);
                 const godTeam2 = buildTeam(team1,p => `${p.profile_id}[${p.god}]`);

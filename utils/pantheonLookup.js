@@ -1,5 +1,5 @@
 
-const PANTHEON_LIST = {
+const GOD_TO_PANTHEON = {
   "zeus": "greek",
   "hades": "greek",
   "poseidon": "greek",
@@ -25,7 +25,7 @@ const PANTHEON_LIST = {
   "quetzalcoatl": "aztec",
 }
 
-const GODS_LIST = Object.entries(PANTHEON_LIST).reduce(
+const PANTHEON_TO_GODS = Object.entries(GOD_TO_PANTHEON).reduce(
   (acc, [god, pantheon]) => {
     if (!acc[pantheon]) acc[pantheon] = [];
     acc[pantheon].push(god);
@@ -35,9 +35,11 @@ const GODS_LIST = Object.entries(PANTHEON_LIST).reduce(
 );
 
 function lookupPantheon(value) {
-  return PANTHEON_LIST[value] || GODS_LIST[value] || null;
+  return GOD_TO_PANTHEON[value] || PANTHEON_TO_GODS[value] || null;
 }
 
 module.exports = {
+  GOD_TO_PANTHEON,
+  PANTHEON_TO_GODS,
   lookupPantheon,
 }

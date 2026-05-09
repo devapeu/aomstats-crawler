@@ -67,6 +67,7 @@ const MatchService = {
                     duration: m.duration,
                     team_match_id: null,
                     team_civ_match_id: null,
+                    team_god_match_id: null,
                 });
             }
 
@@ -87,6 +88,7 @@ const MatchService = {
 
             match.team_match_id = id?.team_match_id || null;
             match.team_civ_match_id = id?.team_civ_match_id || null;
+            match.team_god_match_id = id?.team_god_match_id || null;
         }
 
         PlayerMatchRepo.insertMany(validPlayerMatches);
@@ -100,15 +102,24 @@ const MatchService = {
             const playersInMatch = playerMatches.filter(pm => pm.match_id === match_id);
 
             if (playersInMatch.length > 0) {
-                const team1 = playersInMatch.filter(pm => pm.team === 0).map(p => `${p.profile_id}`).sort();
-                const team2 = playersInMatch.filter(pm => pm.team === 1).map(p => `${p.profile_id}`).sort();
+                const team0 = playersInMatch.filter(pm => pm.team === 0);
+                const team1 = playersInMatch.filter(pm => pm.team === 1);
 
-                const detailedTeam1 = playersInMatch.filter(pm => pm.team === 0).map(p => `${p.profile_id}[${PANTHEON_LIST[p.god]}]`).sort();
-                const detailedTeam2 = playersInMatch.filter(pm => pm.team === 1).map(p => `${p.profile_id}[${PANTHEON_LIST[p.god]}]`).sort();
+                const buildTeam = (players, mapper) => players.map(mapper).sort();
+
+                const plainTeam1 = buildTeam(team0, p => `${p.profile_id}`);
+                const plainTeam2 = buildTeam(team1, p => `${p.profile_id}`);
+
+                const civTeam1 = buildTeam(team0,p => `${p.profile_id}[${PANTHEON_LIST[p.god]}]`);
+                const civTeam2 = buildTeam(team1,p => `${p.profile_id}[${PANTHEON_LIST[p.god]}]`);
+
+                const godTeam1 = buildTeam(team0,p => `${p.profile_id}[${p.god}]`);
+                const godTeam2 = buildTeam(team1,p => `${p.profile_id}[${p.god}]`);
 
                 result.set(match_id, {
-                    team_match_id: sortTeams(team1, team2),
-                    team_civ_match_id: sortTeams(detailedTeam1, detailedTeam2),
+                    team_match_id: sortTeams(plainTeam1, plainTeam2),
+                    team_civ_match_id: sortTeams(civTeam1, civTeam2),
+                    team_god_match_id: sortTeams(godTeam1, godTeam2),
                 });
             }
         }

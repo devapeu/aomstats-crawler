@@ -16,7 +16,7 @@ describe('MatchService', () => {
   });
 
   describe('computeTeamMatchIds', () => {
-    it('computes team_match_id and team_civ_match_id', () => {
+    it('computes team_match_id, team_civ_match_id and team_god_match_id', () => {
       const playerMatches = [
         {
           match_id: 1,
@@ -48,8 +48,8 @@ describe('MatchService', () => {
 
       expect(result.get(1)).toEqual({
         team_match_id: '10,20 vs 30,40',
-        team_civ_match_id:
-          '10[greek],20[egyptian] vs 30[norse],40[norse]',
+        team_civ_match_id: '10[greek],20[egyptian] vs 30[norse],40[norse]',
+        team_god_match_id: "10[zeus],20[ra] vs 30[odin],40[loki]",
       });
     });
 
@@ -74,6 +74,7 @@ describe('MatchService', () => {
       expect(result.get(2)).toEqual({
         team_match_id: '1 vs 99',
         team_civ_match_id: '1[egyptian] vs 99[norse]',
+        team_god_match_id: '1[isis] vs 99[thor]',
       });
     });
   });
@@ -135,6 +136,7 @@ describe('MatchService', () => {
           duration: 1000,
           team_match_id: '10 vs 20',
           team_civ_match_id: '10[greek] vs 20[egyptian]',
+          team_god_match_id: '10[zeus] vs 20[ra]'
         },
       ]);
     });

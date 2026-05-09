@@ -9,6 +9,7 @@ jest.mock('../models/matches', () => ({
 
 const { MatchesRepo, PlayerMatchRepo } = require('../models/matches');
 const { MatchService } = require('../services/matchService');
+const { lookupPantheon } = require("../utils/pantheonLookup");
 
 describe('MatchService', () => {
   beforeEach(() => {

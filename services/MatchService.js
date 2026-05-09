@@ -1,5 +1,6 @@
 const { MatchesRepo } = require('../models/matches');
 const { PlayerMatchRepo } = require('../models/matches');
+const { lookupPantheon } = require("../utils/pantheonLookup");
 
 function isSkippable(m) {
     // invalidate unranked games, de-synced games and games under 6 minutes
@@ -10,32 +11,6 @@ function sortTeams(team1, team2) {
     // Sort teams lex order to be order-agnostic
     const sortedTeams = [team1, team2].sort((a,b) => a.join(',').localeCompare(b.join(',')));
     return sortedTeams.map(t => t.join(',')).join(' vs ');
-}
-
-const PANTHEON_LIST = {
-    "zeus": "greek",
-    "hades": "greek",
-    "poseidon": "greek",
-    "demeter": "greek",
-    "ra": "egyptian",
-    "isis": "egyptian",
-    "set": "egyptian",
-    "thor": "norse",
-    "odin": "norse",
-    "loki": "norse",
-    "freyr": "norse",
-    "kronos": "atlantean",
-    "oranos": "atlantean",
-    "gaia": "atlantean",
-    "fuxi": "chinese",
-    "shennong": "chinese",
-    "nuwa": "chinese",
-    "amaterasu": "japanese",
-    "susanoo": "japanese",
-    "tsukuyomi": "japanese",
-    "huitzilopochtli": "aztec",
-    "tezcatlipoca": "aztec",
-    "quetzalcoatl": "aztec",
 }
 
 const MatchService = {
@@ -110,8 +85,8 @@ const MatchService = {
                 const plainTeam1 = buildTeam(team0, p => `${p.profile_id}`);
                 const plainTeam2 = buildTeam(team1, p => `${p.profile_id}`);
 
-                const civTeam1 = buildTeam(team0,p => `${p.profile_id}[${PANTHEON_LIST[p.god]}]`);
-                const civTeam2 = buildTeam(team1,p => `${p.profile_id}[${PANTHEON_LIST[p.god]}]`);
+                const civTeam1 = buildTeam(team0,p => `${p.profile_id}[${lookupPantheon(p.god)}]`);
+                const civTeam2 = buildTeam(team1,p => `${p.profile_id}[${lookupPantheon(p.god)}]`);
 
                 const godTeam1 = buildTeam(team0,p => `${p.profile_id}[${p.god}]`);
                 const godTeam2 = buildTeam(team1,p => `${p.profile_id}[${p.god}]`);

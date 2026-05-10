@@ -1,4 +1,3 @@
-
 const GOD_TO_PANTHEON = {
   "zeus": "greek",
   "hades": "greek",
@@ -34,12 +33,7 @@ const PANTHEON_TO_GODS = Object.entries(GOD_TO_PANTHEON).reduce(
   {}
 );
 
-function lookupPantheon(value) {
-  return GOD_TO_PANTHEON[value] || PANTHEON_TO_GODS[value] || null;
-}
-
 module.exports = {
   GOD_TO_PANTHEON,
   PANTHEON_TO_GODS,
-  lookupPantheon,
 }

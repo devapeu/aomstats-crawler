@@ -1,7 +1,33 @@
 const Database = require('better-sqlite3');
 const db = new Database('./db.sqlite');
 
-const MatchupRepo = (db) => ({
+const PlayerMatchesRepo = (db) => ({
+  insertMany(rows) {
+    const stmt = db.prepare(`
+      INSERT OR IGNORE INTO player_matches (
+        match_id,
+        profile_id,
+        god,
+        win,
+        team
+      )
+      VALUES (
+        @match_id,
+        @profile_id,
+        @god,
+        @win,
+        @team
+      )
+    `);
+
+    const tx = db.transaction((rows) => {
+      for (const row of rows) {
+        stmt.run(row);
+      }
+    });
+
+    tx(rows);
+  },
   getPlayerWins(teamMatchId, profileId) {
     return db.prepare(`
         SELECT pm.win
@@ -50,5 +76,5 @@ const MatchupRepo = (db) => ({
 });
 
 module.exports = {
-  MatchupRepo,
+  PlayerMatchesRepo,
 };

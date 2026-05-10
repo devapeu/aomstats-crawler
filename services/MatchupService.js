@@ -5,12 +5,12 @@ const {
 } = require('../config/eloConfig');
 
 const { EloRepo } = require('../models/elo');
-const { MatchupRepo } = require('../models/matchups');
+const { PlayerMatchesRepo } = require('../models/playerMatches');
 
 const MatchupService = {
   getMatchupScore(team_match_id) {
     const profile_id = team_match_id.split(" vs ")[0].split(',')[0];
-    const playerScore = MatchupRepo.getPlayerWins(team_match_id, profile_id);
+    const playerScore = PlayerMatchesRepo.getPlayerWins(team_match_id, profile_id);
 
     let team1Wins = 0;
     let team2Wins = 0;
@@ -44,7 +44,7 @@ const MatchupService = {
 
     for (const p1 of team1) {
       for (const p2 of team2) {
-        const stats = MatchupRepo.getPlayerRelationshipWins(p1, {
+        const stats = PlayerMatchesRepo.getPlayerRelationshipWins(p1, {
           type: "rivals",
           players: [p2]
         });

@@ -2,12 +2,16 @@ jest.mock('../models/matches', () => ({
   MatchesRepo: {
     insertMany: jest.fn(),
   },
-  PlayerMatchRepo: {
+}));
+
+jest.mock('../models/playerMatches', () => ({
+  PlayerMatchesRepo: {
     insertMany: jest.fn(),
   },
 }));
 
-const { MatchesRepo, PlayerMatchRepo } = require('../models/matches');
+const { MatchesRepo } = require('../models/matches');
+const { PlayerMatchesRepo } = require('../models/playerMatches');
 const { MatchService } = require('../services/matchService');
 const { GOD_TO_PANTHEON } = require("../utils/pantheonLookup");
 
@@ -111,7 +115,7 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchRepo.insertMany).toHaveBeenCalledWith([
+      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([
         {
           match_id: 1,
           profile_id: 10,
@@ -184,7 +188,7 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
       expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
     });
 
@@ -206,7 +210,7 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
       expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
     });
 
@@ -228,7 +232,7 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
       expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
     });
 
@@ -250,7 +254,7 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
       expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
     });
   });

@@ -1,5 +1,5 @@
 const { MatchesRepo } = require('../models/matches');
-const { PlayerMatchRepo } = require('../models/matches');
+const { PlayerMatchesRepo } = require("../models/playerMatches");
 const { GOD_TO_PANTHEON } = require("../utils/pantheonLookup");
 
 function isSkippable(m) {
@@ -66,7 +66,7 @@ const MatchService = {
             match.team_god_match_id = id?.team_god_match_id || null;
         }
 
-        PlayerMatchRepo.insertMany(validPlayerMatches);
+        PlayerMatchesRepo.insertMany(validPlayerMatches);
         MatchesRepo.insertMany(validMatches);
     },
     computeTeamMatchIds(playerMatches) {

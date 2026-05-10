@@ -44,7 +44,7 @@ describe('MatchupService.getMatchupScore', () => {
       .toHaveBeenCalledWith(
         '101,102 vs 103,104',
         102,
-        { scope: 'player' }
+        { scope: 'global' }
       );
 
     expect(result).toEqual([3, 1]);

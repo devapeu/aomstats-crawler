@@ -18,7 +18,7 @@ const MatchupService = {
         ? 'god'
         : teamsIncludePantheon
           ? 'civ'
-          : 'player';
+          : 'global';
 
     const team_match_id = buildMatchupIdFromTeams(team1, team2, scope);
     const profile_id = team1[0].profile_id;
@@ -37,11 +37,11 @@ const MatchupService = {
 
     return [team1Wins, team2Wins];
   },
-  getMatchupOdds(team1, team2) {
+  getMatchupOdds(team1, team2, scope = 'global') {
     const team1Size = team1.length;
     const team2Size = team2.length;
 
-    const playerElo = EloRepo.getPlayersElo([...team1, ...team2]);
+    const playerElo = EloRepo.getPlayersElo([...team1, ...team2], scope);
     const getElo = (id) => playerElo.find(r => r.profile_id === id)?.elo || 0
 
     const team1Elo = team1.reduce((sum, id) => sum + getElo(id), 0) / team1Size;

@@ -22,7 +22,7 @@ const normalizeTeam = (team, scope) => {
         return `${id}[${p.civ}]`;
       }
 
-      if (scope === "player") {
+      if (scope === "global") {
         return String(id);
       }
 

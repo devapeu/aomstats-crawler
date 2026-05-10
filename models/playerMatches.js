@@ -29,7 +29,7 @@ const PlayerMatchesRepo = (db) => ({
     tx(rows);
   },
   getPlayerWins(teamMatchId, profileId, {
-    scope = 'players'
+    scope = 'global'
   }) {
     let matchupIdCondition = "";
 

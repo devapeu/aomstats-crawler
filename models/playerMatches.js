@@ -73,7 +73,7 @@ const PlayerMatchesRepo = (db) => ({
         GROUP BY pm2.profile_id
     `).all(...params);
   },
-  getPlayerWinsByMap(profileId, { gods = null }) {
+  getPlayerWinsByMap(profileId, { gods = null, after = 0 }) {
     let params = [profileId];
 
     let godFilterCondition = '';
@@ -91,10 +91,11 @@ const PlayerMatchesRepo = (db) => ({
         FROM player_matches pm
                  JOIN matches m ON m.match_id = pm.match_id
         WHERE pm.profile_id = ? ${godFilterCondition}
+          AND startgametime > ?
         GROUP BY m.mapname
     `).all(...params);
   },
-  getPlayerWinsByGod(profileId) {
+  getPlayerWinsByGod(profileId, { after = 0 }) {
     return db.prepare(`
       SELECT 
         god,

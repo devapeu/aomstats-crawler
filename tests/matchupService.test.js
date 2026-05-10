@@ -36,23 +36,74 @@ describe('MatchupService.getMatchupScore', () => {
     ]);
 
     const result = MatchupService.getMatchupScore(
-      '101,102 vs 103,104'
+      [{profile_id: 102}, {profile_id: 101}],
+      [{profile_id: 103}, {profile_id: 104}],
     );
 
     expect(PlayerMatchesRepo.getPlayerWins)
       .toHaveBeenCalledWith(
         '101,102 vs 103,104',
-        '101'
+        102,
+        { scope: 'player' }
       );
 
     expect(result).toEqual([3, 1]);
   });
 
+  it('accepts god name in player data', () => {
+    PlayerMatchesRepo.getPlayerWins.mockReturnValue([
+      { win: 1 },
+      { win: 1 },
+      { win: 0 },
+      { win: 1 },
+    ]);
+
+    const result = MatchupService.getMatchupScore(
+      [{profile_id: 102, god: 'zeus'}, {profile_id: 101, god: 'hades'}],
+      [{profile_id: 103, god: 'poseidon'}, {profile_id: 104, god: 'thor'}],
+    );
+
+    expect(PlayerMatchesRepo.getPlayerWins)
+      .toHaveBeenCalledWith(
+        '101[hades],102[zeus] vs 103[poseidon],104[thor]',
+        102,
+        { scope: 'god' }
+      );
+
+    expect(result).toEqual([3, 1]);
+
+  })
+
+  it('accepts civ name in player data', () => {
+    PlayerMatchesRepo.getPlayerWins.mockReturnValue([
+      { win: 1 },
+      { win: 1 },
+      { win: 0 },
+      { win: 1 },
+    ]);
+
+    const result = MatchupService.getMatchupScore(
+      [{profile_id: 102, civ: 'greek'}, {profile_id: 101, civ: 'egyptian'}],
+      [{profile_id: 103, civ: 'atlantean'}, {profile_id: 104, civ: 'norse'}],
+    );
+
+    expect(PlayerMatchesRepo.getPlayerWins)
+      .toHaveBeenCalledWith(
+        '101[egyptian],102[greek] vs 103[atlantean],104[norse]',
+        102,
+        { scope: 'civ' }
+      );
+
+    expect(result).toEqual([3, 1]);
+
+  })
+
   it('returns zeroed scores when no games exist', () => {
     PlayerMatchesRepo.getPlayerWins.mockReturnValue([]);
 
     const result = MatchupService.getMatchupScore(
-      '101,102 vs 103,104'
+      [{profile_id: 102}, {profile_id: 101}],
+      [{profile_id: 103}, {profile_id: 104}],
     );
 
     expect(result).toEqual([0, 0]);

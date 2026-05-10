@@ -6,11 +6,26 @@ const {
 
 const { EloRepo } = require('../models/elo');
 const { PlayerMatchesRepo } = require('../models/playerMatches');
+const { buildMatchupIdFromTeams } = require('../utils/buildMatchupId');
 
 const MatchupService = {
-  getMatchupScore(team_match_id) {
-    const profile_id = team_match_id.split(" vs ")[0].split(',')[0];
-    const playerScore = PlayerMatchesRepo.getPlayerWins(team_match_id, profile_id);
+  getMatchupScore(team1, team2) {
+    const teamsIncludeGods = team1.every(p => "god" in p) && team2.every(p => "god" in p);
+    const teamsIncludePantheon = team1.every(p => "civ" in p) && team2.every(p => "civ" in p);
+
+    const scope =
+      teamsIncludeGods
+        ? 'god'
+        : teamsIncludePantheon
+          ? 'civ'
+          : 'player';
+
+    const team_match_id = buildMatchupIdFromTeams(team1, team2, scope);
+    const profile_id = team1[0].profile_id;
+
+    const playerScore = PlayerMatchesRepo.getPlayerWins(team_match_id, profile_id, {
+      scope: scope
+    });
 
     let team1Wins = 0;
     let team2Wins = 0;

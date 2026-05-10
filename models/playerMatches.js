@@ -28,14 +28,26 @@ const PlayerMatchesRepo = (db) => ({
 
     tx(rows);
   },
-  getPlayerWins(teamMatchId, profileId) {
+  getPlayerWins(teamMatchId, profileId, {
+    scope = 'players'
+  }) {
+    let matchupIdCondition = "";
+
+    if (scope === 'god') {
+      matchupIdCondition = "AND m.team_god_match_id = ?"
+    } else if (scope === 'civ') {
+      matchupIdCondition = "AND m.team_civ_match_id = ?"
+    } else {
+      matchupIdCondition = "AND m.team_match_id = ?"
+    }
+
     return db.prepare(`
         SELECT pm.win
         FROM player_matches pm
                  JOIN matches m ON m.match_id = pm.match_id
-        WHERE m.team_match_id = ?
-          AND pm.profile_id = ?
-    `).all(teamMatchId, profileId);
+        WHERE pm.profile_id = ? 
+              ${matchupIdCondition}
+    `).all(profileId, teamMatchId);
   },
   getPlayerRelationshipWins(profileId, {
     type = 'rival',

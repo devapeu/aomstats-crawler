@@ -39,7 +39,7 @@ const PlayerMatchesRepo = (db) => ({
   },
   getPlayerRelationshipWins(profileId, {
     type = 'rival',
-    players = [],
+    players = null,
     after = 0,
   } = {}) {
 
@@ -51,7 +51,7 @@ const PlayerMatchesRepo = (db) => ({
     let playerFilterCondition = '';
     let params = [profileId, after];
 
-    if (players.length > 0) {
+    if (Array.isArray(players) && players.length > 0) {
       const placeholders = players.map(() => '?').join(',');
       playerFilterCondition = `AND pm2.profile_id IN (${placeholders})`;
       params = [profileId, after, ...players];
@@ -73,6 +73,27 @@ const PlayerMatchesRepo = (db) => ({
         GROUP BY pm2.profile_id
     `).all(...params);
   },
+  getPlayerWinsByMap(profileId, { gods = null }) {
+    let params = [profileId];
+
+    let godFilterCondition = '';
+
+    if (Array.isArray(gods) && gods.length > 0) {
+      const placeholders = gods.map(() => '?').join(',');
+      godFilterCondition = `AND pm.god IN (${placeholders})`;
+      params = params.concat(gods);
+    }
+
+    return db.prepare(`
+        SELECT m.mapname,
+               SUM(pm.win) AS wins,
+               COUNT(*)    AS total
+        FROM player_matches pm
+                 JOIN matches m ON m.match_id = pm.match_id
+        WHERE pm.profile_id = ? ${godFilterCondition}
+        GROUP BY m.mapname
+    `).all(...params);
+  }
 });
 
 module.exports = {

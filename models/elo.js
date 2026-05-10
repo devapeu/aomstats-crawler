@@ -1,44 +1,114 @@
-const Database = require('better-sqlite3');
-const db = new Database('./db.sqlite');
-const { GOD_TO_PANTHEON, PANTHEON_TO_GODS } = require("../utils/pantheonLookup");
+const { ELO_DEFAULT } = require("../config/eloConfig");
 
-const {ELO_DEFAULT} = require("../config/eloConfig");
+const SCOPE = {
+  GLOBAL: "global",
+  GOD: "god",
+  CIV: "civ",
+};
 
 const EloRepo = (db) => ({
-  getPlayerElo(profile_id, god) {
-    const stmt = db.prepare('SELECT elo FROM player_elo WHERE profile_id = ? AND god = ?');
-    const result = stmt.get(profile_id, god);
+  getElo(profileId, scopeType = SCOPE.GLOBAL, scopeKey = null) {
+    const result = db.prepare(`
+      SELECT elo
+      FROM player_elo
+      WHERE profile_id = ?
+        AND scope_type = ?
+        AND (
+          (scope_key IS NULL AND ? IS NULL)
+          OR scope_key = ?
+        )
+    `).get(profileId, scopeType, scopeKey, scopeKey);
+
     return result ? result.elo : ELO_DEFAULT;
   },
-  getPlayersElo(profileId, gods) {
-    let whereClause = '';
-    let params = [profileId];
 
-    if (gods.length) {
-      const placeholders = gods.map(() => '?').join(',');
+  getAllElo(profileId) {
+    return db.prepare(`
+      SELECT
+        scope_type,
+        scope_key,
+        elo,
+        last_updated
+      FROM player_elo
+      WHERE profile_id = ?
+      ORDER BY scope_type, scope_key
+    `).all(profileId);
+  },
 
-      whereClause = `AND WHERE god IN (${placeholders})`;
-      params = [profileId, ...gods];
-    }
+  getGodElo(profileId, god) {
+    return this.getElo(profileId, SCOPE.GOD, god);
+  },
+
+  getCivElo(profileId, civ) {
+    return this.getElo(profileId, SCOPE.CIV, civ);
+  },
+
+  getGlobalElo(profileId) {
+    return this.getElo(profileId, SCOPE.GLOBAL, null);
+  },
+
+  getManyElo(entries, scopeType) {
+    if (!entries.length) return [];
+
+    const placeholders = entries
+      .map(() => "(?, ?)")
+      .join(", ");
+
+    const values = entries.flatMap(entry => [
+      entry.profile_id,
+      entry.key,
+    ]);
 
     return db.prepare(`
-        SELECT profile_id, elo
-        FROM player_elo
-        WHERE profile_id = ?;
-                 ${whereClause};
-    `).all(params);
+    SELECT
+      profile_id,
+      scope_key,
+      elo
+    FROM player_elo
+    WHERE scope_type = ?
+      AND (profile_id, scope_key) IN (${placeholders})
+  `).all(scopeType, ...values);
   },
-  updatePlayerElo(profile_id, god, elo) {
+
+  upsertElo(profileId, scopeType, scopeKey, elo) {
     const now = Math.floor(Date.now() / 1000);
-    const stmt = db.prepare(`
-        INSERT OR
-        REPLACE INTO player_elo (profile_id, god, elo, last_updated)
-        VALUES (?, ?, ?, ?)
-    `);
-    stmt.run(profile_id, god, elo, now)
-  }
+
+    db.prepare(`
+      INSERT INTO player_elo (
+        profile_id,
+        scope_type,
+        scope_key,
+        elo,
+        last_updated
+      )
+      VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(profile_id, scope_type, scope_key)
+      DO UPDATE SET
+        elo = excluded.elo,
+        last_updated = excluded.last_updated
+    `).run(
+      profileId,
+      scopeType,
+      scopeKey,
+      elo,
+      now
+    );
+  },
+
+  updateGodElo(profileId, god, elo) {
+    this.upsertElo(profileId, SCOPE.GOD, god, elo);
+  },
+
+  updateCivElo(profileId, civ, elo) {
+    this.upsertElo(profileId, SCOPE.CIV, civ, elo);
+  },
+
+  updateGlobalElo(profileId, elo) {
+    this.upsertElo(profileId, SCOPE.GLOBAL, null, elo);
+  },
 });
 
 module.exports = {
   EloRepo,
-}
+  SCOPE,
+};

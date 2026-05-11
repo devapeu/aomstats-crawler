@@ -7,7 +7,7 @@ jest.mock('../models/playerMatches', () => ({
 
 jest.mock('../models/elo', () => ({
   EloRepo: {
-    getPlayersElo: jest.fn(),
+    getManyElo: jest.fn(),
   }
 }));
 
@@ -116,7 +116,7 @@ describe('MatchupService.getMatchupOdds', () => {
   });
 
   it('returns probability favoring stronger Elo team', () => {
-    EloRepo.getPlayersElo.mockReturnValue([
+    EloRepo.getManyElo.mockReturnValue([
       { profile_id: 1, elo: 1800 },
       { profile_id: 2, elo: 1750 },
       { profile_id: 3, elo: 1400 },
@@ -128,15 +128,15 @@ describe('MatchupService.getMatchupOdds', () => {
     });
 
     const result = MatchupService.getMatchupOdds(
-      [1, 2],
-      [3, 4]
+      [{ profile_id: 1 }, { profile_id: 2 }],
+      [{ profile_id: 3 }, { profile_id: 4 }]
     );
 
     expect(result).toBeGreaterThan(0.5);
   });
 
   it('uses historical matchup data when available', () => {
-    EloRepo.getPlayersElo.mockReturnValue([
+    EloRepo.getManyElo.mockReturnValue([
       { profile_id: 1, elo: 1500 },
       { profile_id: 2, elo: 1500 },
     ]);
@@ -151,15 +151,15 @@ describe('MatchupService.getMatchupOdds', () => {
     });
 
     const result = MatchupService.getMatchupOdds(
-      [1],
-      [2]
+      [{ profile_id: 1 }],
+      [{ profile_id: 2 }]
     );
 
     expect(result).toBeGreaterThan(0.5);
   });
 
   it('falls back to Elo-only probability without historical data', () => {
-    EloRepo.getPlayersElo.mockReturnValue([
+    EloRepo.getManyElo.mockReturnValue([
       { profile_id: 1, elo: 1600 },
       { profile_id: 2, elo: 1400 },
     ]);
@@ -169,15 +169,15 @@ describe('MatchupService.getMatchupOdds', () => {
     });
 
     const result = MatchupService.getMatchupOdds(
-      [1],
-      [2]
+      [{ profile_id: 1 }],
+      [{ profile_id: 2 }]
     );
 
     expect(result).toBeGreaterThan(0.5);
   });
 
   it('handles equal Elo teams near 50 percent', () => {
-    EloRepo.getPlayersElo.mockReturnValue([
+    EloRepo.getManyElo.mockReturnValue([
       { profile_id: 1, elo: 1500 },
       { profile_id: 2, elo: 1500 },
     ]);
@@ -187,15 +187,15 @@ describe('MatchupService.getMatchupOdds', () => {
     });
 
     const result = MatchupService.getMatchupOdds(
-      [1],
-      [2]
+      [{ profile_id: 1 }],
+      [{ profile_id: 2 }]
     );
 
     expect(result).toBeCloseTo(0.5, 1);
   });
 
   it('applies team size advantage', () => {
-    EloRepo.getPlayersElo.mockReturnValue([
+    EloRepo.getManyElo.mockReturnValue([
       { profile_id: 1, elo: 1500 },
       { profile_id: 2, elo: 1500 },
       { profile_id: 3, elo: 1500 },
@@ -206,15 +206,15 @@ describe('MatchupService.getMatchupOdds', () => {
     });
 
     const result = MatchupService.getMatchupOdds(
-      [1, 2],
-      [3]
+      [{ profile_id: 1 }, { profile_id: 2 }],
+      [{ profile_id: 3 }]
     );
 
     expect(result).toBeGreaterThan(0.5);
   });
 
   it('never exceeds probability bounds', () => {
-    EloRepo.getPlayersElo.mockReturnValue([
+    EloRepo.getManyElo.mockReturnValue([
       { profile_id: 1, elo: 3000 },
       { profile_id: 2, elo: 500 },
     ]);
@@ -229,8 +229,8 @@ describe('MatchupService.getMatchupOdds', () => {
     });
 
     const result = MatchupService.getMatchupOdds(
-      [1],
-      [2]
+      [{ profile_id: 1 }],
+      [{ profile_id: 2 }]
     );
 
     expect(result).toBeLessThanOrEqual(1);

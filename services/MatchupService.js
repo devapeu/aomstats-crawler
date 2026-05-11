@@ -7,6 +7,7 @@ const {
 const { EloRepo } = require('../models/elo');
 const { PlayerMatchesRepo } = require('../models/playerMatches');
 const { buildMatchupIdFromTeams } = require('../utils/buildMatchupId');
+const { GOD_TO_PANTHEON} = require("../utils/pantheonLookup");
 
 const MatchupService = {
   getMatchupScore(team1, team2) {
@@ -41,11 +42,21 @@ const MatchupService = {
     const team1Size = team1.length;
     const team2Size = team2.length;
 
-    const playerElo = EloRepo.getPlayersElo([...team1, ...team2], scope);
+    let playerElo = null;
+    let entries = null;
+    if (scope === 'god') {
+      entries = [...team1, ...team2].map(p => ({...p, key: p.god }))
+    } else if (scope === 'civ') {
+      entries = [...team1, ...team2].map(p => ({...p, key: GOD_TO_PANTHEON[p.god] }))
+    } else {
+      entries = [...team1, ...team2].map(p => ({...p, key: null }));
+    }
+
+    playerElo = EloRepo.getManyElo(entries, scope);
     const getElo = (id) => playerElo.find(r => r.profile_id === id)?.elo || 0
 
-    const team1Elo = team1.reduce((sum, id) => sum + getElo(id), 0) / team1Size;
-    const team2Elo = team2.reduce((sum, id) => sum + getElo(id), 0) / team2Size;
+    const team1Elo = team1.reduce((sum, p) => sum + getElo(p.profile_id), 0) / team1Size;
+    const team2Elo = team2.reduce((sum, p) => sum + getElo(p.profile_id), 0) / team2Size;
 
     // Adjust for team size differences - each extra player provides ~250 Elo advantage
     const sizeAdvantage = (team1Size - team2Size) * ELO_SIZE_ADVANTAGE_PER_PLAYER;
@@ -59,11 +70,11 @@ const MatchupService = {
 
     for (const p1 of team1) {
       for (const p2 of team2) {
-        const stats = PlayerMatchesRepo.getPlayerRelationshipWins(p1, {
+        const stats = PlayerMatchesRepo.getPlayerRelationshipWins(p1.profile_id, {
           type: "rivals",
-          players: [p2]
+          players: [p2.profile_id]
         });
-        const rivalStats = stats.players?.[p2];
+        const rivalStats = stats.players?.[p2.profile_id];
         if (rivalStats && rivalStats.total > 0) {
           const winrate = rivalStats.wins / rivalStats.total;
           if (winrate > 0 && winrate < 1) { // Avoid log(0) issues

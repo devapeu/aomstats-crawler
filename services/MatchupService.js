@@ -7,19 +7,15 @@ const {
 const { EloRepo } = require('../models/elo');
 const { PlayerMatchesRepo } = require('../models/playerMatches');
 const { buildMatchupIdFromTeams } = require('../utils/buildMatchupId');
-const { GOD_TO_PANTHEON} = require("../utils/pantheonLookup");
 
 const MatchupService = {
   getMatchupScore(team1, team2) {
     const teamsIncludeGods = team1.every(p => "god" in p) && team2.every(p => "god" in p);
-    const teamsIncludePantheon = team1.every(p => "civ" in p) && team2.every(p => "civ" in p);
 
     const scope =
       teamsIncludeGods
         ? 'god'
-        : teamsIncludePantheon
-          ? 'civ'
-          : 'global';
+        : 'global';
 
     const team_match_id = buildMatchupIdFromTeams(team1, team2, scope);
     const profile_id = team1[0].profile_id;
@@ -46,8 +42,6 @@ const MatchupService = {
     let entries = null;
     if (scope === 'god') {
       entries = [...team1, ...team2].map(p => ({...p, key: p.god }))
-    } else if (scope === 'civ') {
-      entries = [...team1, ...team2].map(p => ({...p, key: GOD_TO_PANTHEON[p.god] }))
     } else {
       entries = [...team1, ...team2].map(p => ({...p, key: null }));
     }

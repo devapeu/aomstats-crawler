@@ -41,7 +41,6 @@ const MatchService = {
                     mapname: m.mapname,
                     duration: m.duration,
                     team_match_id: null,
-                    team_civ_match_id: null,
                     team_god_match_id: null,
                 });
             }
@@ -62,7 +61,6 @@ const MatchService = {
             const id = teamMatchIds.get(match.match_id);
 
             match.team_match_id = id?.team_match_id || null;
-            match.team_civ_match_id = id?.team_civ_match_id || null;
             match.team_god_match_id = id?.team_god_match_id || null;
         }
 
@@ -85,15 +83,11 @@ const MatchService = {
                 const plainTeam1 = buildTeam(team0, p => `${p.profile_id}`);
                 const plainTeam2 = buildTeam(team1, p => `${p.profile_id}`);
 
-                const civTeam1 = buildTeam(team0,p => `${p.profile_id}[${GOD_TO_PANTHEON[p.god]}]`);
-                const civTeam2 = buildTeam(team1,p => `${p.profile_id}[${GOD_TO_PANTHEON[p.god]}]`);
-
                 const godTeam1 = buildTeam(team0,p => `${p.profile_id}[${p.god}]`);
                 const godTeam2 = buildTeam(team1,p => `${p.profile_id}[${p.god}]`);
 
                 result.set(match_id, {
                     team_match_id: sortTeams(plainTeam1, plainTeam2),
-                    team_civ_match_id: sortTeams(civTeam1, civTeam2),
                     team_god_match_id: sortTeams(godTeam1, godTeam2),
                 });
             }

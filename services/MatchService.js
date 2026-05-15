@@ -1,6 +1,5 @@
 const { MatchesRepo } = require('../models/matches');
 const { PlayerMatchesRepo } = require("../models/playerMatches");
-const { GOD_TO_PANTHEON } = require("../utils/pantheonLookup");
 
 function isSkippable(m) {
     // invalidate unranked games, de-synced games and games under 6 minutes

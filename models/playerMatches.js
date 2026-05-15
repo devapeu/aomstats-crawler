@@ -45,8 +45,7 @@ const PlayerMatchesRepo = (db) => ({
         SELECT pm.win
         FROM player_matches pm
                  JOIN matches m ON m.match_id = pm.match_id
-        WHERE pm.profile_id = ? 
-              ${matchupIdCondition}
+        WHERE pm.profile_id = ? ${matchupIdCondition}
     `).all(profileId, teamMatchId);
   },
   getPlayerRelationshipWins(profileId, {
@@ -85,7 +84,7 @@ const PlayerMatchesRepo = (db) => ({
         GROUP BY pm2.profile_id
     `).all(...params);
   },
-  getPlayerWinsByMap(profileId, { gods = null, after = 0 }) {
+  getPlayerWinsByMap(profileId, {gods = null, after = 0}) {
     let params = [profileId];
 
     let godFilterCondition = '';
@@ -121,7 +120,37 @@ const PlayerMatchesRepo = (db) => ({
       GROUP BY god
       ORDER BY total_games DESC
     `).all(profileId, after);
-  }
+  },
+  getManyMatchesWithPlayers(after = 0) {
+    return db.prepare(`
+        SELECT pm.match_id,
+               m.startgametime,
+
+               json_group_array(
+                       CASE
+                           WHEN pm.team = 0 THEN json_object(
+                                   'profile_id', pm.profile_id,
+                                   'god', pm.god,
+                                   'win', pm.win)
+                           END
+               ) AS team_a,
+
+               json_group_array(
+                       CASE
+                           WHEN pm.team = 1 THEN json_object(
+                                   'profile_id', pm.profile_id,
+                                   'god', pm.god,
+                                   'win', pm.win)
+                           END
+               ) AS team_b
+        FROM player_matches pm
+                 JOIN matches m
+                      ON m.match_id = pm.match_id
+        WHERE m.startgametime > ?
+        GROUP BY pm.match_id,
+                 m.startgametime;
+    `).all(after);
+  },
 });
 
 module.exports = {

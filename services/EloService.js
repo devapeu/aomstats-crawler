@@ -44,7 +44,7 @@ const EloService = {
   getTeamEloSum(team, scopeType) {
     return team.reduce((sum, player) => {
       let scopeKey = null;
-      if (scopeType === "god") scopeKey = player.god;
+      if (scopeType === SCOPE.GOD) scopeKey = player.god;
       return (
         sum +
         EloRepo.getElo(
@@ -59,7 +59,7 @@ const EloService = {
   updateTeamElo(team, change, teamSize, scopeType = SCOPE.GLOBAL) {
     for (const player of team) {
       let scopeKey = null;
-      if (scopeType === "god") {
+      if (scopeType === SCOPE.GOD) {
         scopeKey = player.god;
       }
 

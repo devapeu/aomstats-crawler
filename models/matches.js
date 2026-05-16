@@ -10,8 +10,8 @@ const MatchesRepo = (db) => ({
         startgametime,
         mapname,
         duration,
-        team_matchup_id,
-        team_god_matchup_id,
+        team_match_id,
+        team_god_match_id
       )
       VALUES (
         @match_id,
@@ -19,8 +19,8 @@ const MatchesRepo = (db) => ({
         @startgametime,
         @mapname,
         @duration,
-        @team_matchup_id,
-        @team_god_matchup_id,
+        @team_match_id,
+        @team_god_match_id
       )
     `);
 

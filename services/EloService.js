@@ -21,6 +21,25 @@ function isValidMatch(team1, team2) {
   return true;
 }
 
+const matchCountCache = new Map();
+
+function getMatchCountCached(profileId, scopeType, scopeKey = null) {
+  const key = `${profileId}:${scopeType}:${scopeKey ?? "global"}`;
+
+  if (matchCountCache.has(key)) {
+    return matchCountCache.get(key);
+  }
+
+  const count = PlayerMatchesRepo.getMatchCount(
+    profileId,
+    scopeType === SCOPE.GOD ? scopeKey : null
+  );
+
+  matchCountCache.set(key, count);
+
+  return count;
+}
+
 const EloService = {
   getTeamEloSum(team, scopeType) {
     return team.reduce((sum, player) => {
@@ -50,7 +69,7 @@ const EloService = {
         scopeKey
       );
 
-      const matchCount = PlayerMatchesRepo.getMatchCount(
+      const matchCount = getMatchCountCached(
         player.profile_id,
         scopeKey
       );
@@ -119,6 +138,8 @@ const EloService = {
   updateEloForMatches({
       scopeType = SCOPE.GLOBAL,
     } = {}) {
+
+    matchCountCache.clear();
 
     const lastProcessedMatch = EloRepo.getLastProcessedMatch(scopeType);
 

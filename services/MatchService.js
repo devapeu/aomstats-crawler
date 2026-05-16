@@ -8,8 +8,8 @@ const Players = PlayersRepo(db);
 const PlayerMatches = PlayerMatchesRepo(db);
 
 function isSkippable(m) {
-    // invalidate unranked games, de-synced games and games under 6 minutes
-    return m.description === "AUTOMATCH" || m.resulttype === 4 || m.duration < 300;
+    // invalidate unranked games, de-synced games and games under 8 minutes
+    return m.description === "AUTOMATCH" || m.resulttype === 4 || m.duration < 480;
 }
 
 function sortTeams(team1, team2) {

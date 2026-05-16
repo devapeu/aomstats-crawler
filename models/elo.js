@@ -39,10 +39,6 @@ const EloRepo = (db) => ({
     return this.getElo(profileId, SCOPE.GOD, god);
   },
 
-  getCivElo(profileId, civ) {
-    return this.getElo(profileId, SCOPE.CIV, civ);
-  },
-
   getGlobalElo(profileId) {
     return this.getElo(profileId, SCOPE.GLOBAL, null);
   },
@@ -99,12 +95,25 @@ const EloRepo = (db) => ({
     this.upsertElo(profileId, SCOPE.GOD, god, elo);
   },
 
-  updateCivElo(profileId, civ, elo) {
-    this.upsertElo(profileId, SCOPE.CIV, civ, elo);
-  },
-
   updateGlobalElo(profileId, elo) {
     this.upsertElo(profileId, SCOPE.GLOBAL, null, elo);
+  },
+
+  getLastProcessedMatch(scopeType = SCOPE.GLOBAL) {
+    const row = db.prepare(`
+        SELECT value FROM elo_meta WHERE key = 'last_processed_match' AND type = ?
+    `).get(scopeType);
+
+    return row?.value ?? null;
+  },
+
+  updateLastProcessedMatch(matchId) {
+    return db.prepare(`
+        INSERT INTO elo_meta (key, value)
+        VALUES ('last_processed_match', ?)
+        ON CONFLICT(key)
+            DO UPDATE SET value = excluded.value
+    `).run(matchId);
   },
 });
 

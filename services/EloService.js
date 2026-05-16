@@ -25,6 +25,8 @@ function isValidMatch(team1, team2) {
 const EloService = {
   getAverageElo(team, scopeType, scopeKey) {
     const total = team.reduce((sum, player) => {
+      let scopeKey = null;
+      if (scopeType === "god") scopeKey = player.god;
       return (
         sum +
         EloRepo.getElo(
@@ -42,9 +44,11 @@ const EloService = {
     team,
     change,
     scopeType,
-    scopeKey
   ) {
     for (const player of team) {
+      let scopeKey = null;
+      if (scopeType === "god") scopeKey = player.god;
+
       const currentElo =
         EloRepo.getElo(
           player.profile_id,
@@ -61,17 +65,9 @@ const EloService = {
     }
   },
 
-  hasProcessedMatch(matchId, startGameTime) {
-    return EloRepo.hasProcessedMatch(
-      matchId,
-      startGameTime
-    );
-  },
-
   updateMatchElo(
     match,
     scopeType = SCOPE.GLOBAL,
-    scopeKey = null
   ) {
     const team1 = match.team_a || [];
     const team2 = match.team_b || [];
@@ -84,14 +80,12 @@ const EloService = {
       this.getAverageElo(
         team1,
         scopeType,
-        scopeKey
       );
 
     const team2Elo =
       this.getAverageElo(
         team2,
         scopeType,
-        scopeKey
       );
 
     const sizeAdvantage =
@@ -115,45 +109,29 @@ const EloService = {
       team1,
       eloChange,
       scopeType,
-      scopeKey
     );
 
     this.updateTeamElo(
       team2,
       -eloChange,
       scopeType,
-      scopeKey
     );
   },
 
   updateEloForMatches({
-      recalculateAll = false,
       scopeType = SCOPE.GLOBAL,
-      scopeKeyResolver = null,
     } = {}) {
 
-    const matches = MatchRepo.getManyMatchesWithPlayers();
+    const lastProcessedMatch = EloRepo.getLastProcessedMatch(scopeType);
+
+    const matches = MatchRepo.getManyMatchesWithPlayers({
+      after: lastProcessedMatch
+    });
 
     for (const match of matches) {
-      if (
-        !recalculateAll &&
-        this.hasProcessedMatch(
-          match.match_id,
-          match.startgametime
-        )
-      ) {
-        continue;
-      }
-
-      const scopeKey =
-        scopeKeyResolver
-          ? scopeKeyResolver(match)
-          : null;
-
       this.updateMatchElo(
         match,
         scopeType,
-        scopeKey
       );
     }
   },

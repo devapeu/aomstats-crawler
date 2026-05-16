@@ -1,5 +1,11 @@
 const { MatchesRepo } = require('../models/matches');
 const { PlayerMatchesRepo } = require("../models/playerMatches");
+const { PlayersRepo } = require("../models/players");
+const { db } = require("../database");
+
+const Matches = MatchesRepo(db);
+const Players = PlayersRepo(db);
+const PlayerMatches = PlayerMatchesRepo(db);
 
 function isSkippable(m) {
     // invalidate unranked games, de-synced games and games under 6 minutes
@@ -15,10 +21,12 @@ function sortTeams(team1, team2) {
 const MatchService = {
     storeMatches(matches) {
         const badMatchIds = new Set();
+        const players = Players.getAll();
+        const playerIds = new Set(players.map(player => player.profile_id));
 
         // find matches that had a player on a third, fourth, fifth... team
         for (const m of matches) {
-            if (m.team > 1) {
+            if (m.team > 1 || !playerIds.has(m.profile_id)) {
                 badMatchIds.add(m.match_id);
             }
         }
@@ -63,8 +71,8 @@ const MatchService = {
             match.team_god_match_id = id?.team_god_match_id || null;
         }
 
-        PlayerMatchesRepo.insertMany(validPlayerMatches);
-        MatchesRepo.insertMany(validMatches);
+        Matches.insertMany(validMatches);
+        PlayerMatches.insertMany(validPlayerMatches);
     },
     computeTeamMatchIds(playerMatches) {
         let result = new Map();

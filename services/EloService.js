@@ -1,5 +1,10 @@
 const { EloRepo, SCOPE } = require('../models/elo');
 const { PlayerMatchesRepo } = require("../models/playerMatches");
+const { db } = require("../database");
+
+const Elo = EloRepo(db);
+const PlayerMatches = PlayerMatchesRepo(db);
+
 const { MatchRepo } = require('../models/matches');
 const {
   ELO_BETA_FACTOR,
@@ -30,7 +35,7 @@ function getMatchCountCached(profileId, scopeType, scopeKey = null) {
     return matchCountCache.get(key);
   }
 
-  const count = PlayerMatchesRepo.getMatchCount(
+  const count = PlayerMatches.getMatchCount(
     profileId,
     scopeType === SCOPE.GOD ? scopeKey : null
   );
@@ -47,7 +52,7 @@ const EloService = {
       if (scopeType === SCOPE.GOD) scopeKey = player.god;
       return (
         sum +
-        EloRepo.getElo(
+        Elo.getElo(
           player.profile_id,
           scopeType,
           scopeKey
@@ -63,7 +68,7 @@ const EloService = {
         scopeKey = player.god;
       }
 
-      const currentElo = EloRepo.getElo(
+      const currentElo = Elo.getElo(
         player.profile_id,
         scopeType,
         scopeKey
@@ -91,7 +96,7 @@ const EloService = {
 
       const newElo = currentElo + playerDelta;
 
-      EloRepo.upsertElo(
+      Elo.upsertElo(
         player.profile_id,
         scopeType,
         scopeKey,
@@ -141,7 +146,7 @@ const EloService = {
 
     matchCountCache.clear();
 
-    const lastProcessedMatch = EloRepo.getLastProcessedMatch(scopeType);
+    const lastProcessedMatch = Elo.getLastProcessedMatch(scopeType);
 
     const matches = MatchRepo.getManyMatchesWithPlayers({
       after: lastProcessedMatch

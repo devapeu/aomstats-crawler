@@ -5,7 +5,12 @@ const {
 } = require('../config/eloConfig');
 
 const { EloRepo } = require('../models/elo');
-const { PlayerMatchesRepo } = require('../models/playerMatches');
+const { PlayerMatchesRepo } = require("../models/playerMatches");
+const { db } = require("../database");
+
+const Elo = EloRepo(db);
+const PlayerMatches = PlayerMatchesRepo(db);
+
 const { buildMatchupIdFromTeams } = require('../utils/buildMatchupId');
 
 const MatchupService = {
@@ -20,7 +25,7 @@ const MatchupService = {
     const team_match_id = buildMatchupIdFromTeams(team1, team2, scope);
     const profile_id = team1[0].profile_id;
 
-    const playerScore = PlayerMatchesRepo.getPlayerWins(team_match_id, profile_id, {
+    const playerScore = PlayerMatches.getPlayerWins(team_match_id, profile_id, {
       scope: scope
     });
 
@@ -46,7 +51,7 @@ const MatchupService = {
       entries = [...team1, ...team2].map(p => ({...p, key: null }));
     }
 
-    playerElo = EloRepo.getManyElo(entries, scope);
+    playerElo = Elo.getManyElo(entries, scope);
     const getElo = (id) => playerElo.find(r => r.profile_id === id)?.elo || 0
 
     const team1Elo = team1.reduce((sum, p) => sum + getElo(p.profile_id), 0) / team1Size;
@@ -64,7 +69,7 @@ const MatchupService = {
 
     for (const p1 of team1) {
       for (const p2 of team2) {
-        const stats = PlayerMatchesRepo.getPlayerRelationshipWins(p1.profile_id, {
+        const stats = PlayerMatches.getPlayerRelationshipWins(p1.profile_id, {
           type: "rivals",
           players: [p2.profile_id]
         });

@@ -62,7 +62,7 @@ const EloService = {
 
   updateTeamElo(team, change, teamSize, scopeType = SCOPE.GLOBAL) {
     for (const player of team) {
-      let scopeKey = null;
+      let scopeKey = "";
       if (scopeType === SCOPE.GOD) {
         scopeKey = player.god;
       }

@@ -139,6 +139,22 @@ const PlayerMatchesRepo = (db) => ({
       ORDER BY total_games DESC
     `).all(profileId, after);
   },
+  getPlayerWinstreak(profileId) {
+    const rows = db.prepare(`
+        SELECT win
+        FROM player_matches
+        WHERE profile_id = ?
+        ORDER BY match_id DESC
+    `).all(profileId);
+
+    let streak = 0;
+    for (const r of rows) {
+      if (r.win === 1) streak++;
+      else break;
+    }
+
+    return streak;
+  },
   getManyMatchesWithPlayers(after = 0) {
     return db.prepare(`
         SELECT pm.match_id,

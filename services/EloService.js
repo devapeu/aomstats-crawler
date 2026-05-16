@@ -125,8 +125,6 @@ const EloService = {
       scopeType = SCOPE.GLOBAL,
     } = {}) {
 
-    matchCountCache.clear();
-
     const lastProcessedMatch = Elo.getLastProcessedMatch(scopeType);
 
     const matches = PlayerMatches.getManyMatchesWithPlayers(lastProcessedMatch);

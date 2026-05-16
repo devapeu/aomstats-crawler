@@ -5,7 +5,6 @@ const { db } = require("../database");
 const Elo = EloRepo(db);
 const PlayerMatches = PlayerMatchesRepo(db);
 
-const { MatchRepo } = require('../models/matches');
 const {
   ELO_BETA_FACTOR,
   ELO_SCALE,
@@ -106,8 +105,8 @@ const EloService = {
   },
 
   updateMatchElo(match, scopeType = SCOPE.GLOBAL) {
-    const team1 = match.team_a || [];
-    const team2 = match.team_b || [];
+    const team1 = JSON.parse(match.team_a).filter(Boolean) || [];
+    const team2 = JSON.parse(match.team_b).filter(Boolean) || [];
 
     if (!isValidMatch(team1, team2)) return;
 
@@ -148,9 +147,7 @@ const EloService = {
 
     const lastProcessedMatch = Elo.getLastProcessedMatch(scopeType);
 
-    const matches = MatchRepo.getManyMatchesWithPlayers({
-      after: lastProcessedMatch
-    });
+    const matches = PlayerMatches.getManyMatchesWithPlayers(lastProcessedMatch);
 
     for (const match of matches) {
       this.updateMatchElo(

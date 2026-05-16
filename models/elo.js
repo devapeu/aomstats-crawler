@@ -101,18 +101,18 @@ const EloRepo = (db) => ({
 
   getLastProcessedMatch(scopeType = SCOPE.GLOBAL) {
     const row = db.prepare(`
-        SELECT value FROM elo_meta WHERE key = 'last_processed_match' AND type = ?
+        SELECT meta_value FROM player_elo_meta WHERE meta_key = 'last_processed_match' AND scope = ?
     `).get(scopeType);
 
-    return row?.value ?? null;
+    return row?.meta_value ?? null;
   },
 
   updateLastProcessedMatch(matchId) {
     return db.prepare(`
-        INSERT INTO elo_meta (key, value)
+        INSERT INTO player_elo_meta (meta_key, meta_value)
         VALUES ('last_processed_match', ?)
-        ON CONFLICT(key)
-            DO UPDATE SET value = excluded.value
+        ON CONFLICT(meta_key)
+            DO UPDATE SET meta_value = excluded.meta_value
     `).run(matchId);
   },
 });

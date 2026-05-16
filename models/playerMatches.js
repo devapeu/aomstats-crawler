@@ -103,7 +103,7 @@ const PlayerMatchesRepo = (db) => ({
     `).all(...params);
   },
   getPlayerWinsByMap(profileId, {gods = null, after = 0}) {
-    let params = [profileId];
+    let params = [profileId, after];
 
     let godFilterCondition = '';
 
@@ -119,9 +119,11 @@ const PlayerMatchesRepo = (db) => ({
                COUNT(*)    AS total
         FROM player_matches pm
                  JOIN matches m ON m.match_id = pm.match_id
-        WHERE pm.profile_id = ? ${godFilterCondition}
-          AND startgametime > ?
+        WHERE pm.profile_id = ?
+          AND m.startgametime > ?
+            ${godFilterCondition}
         GROUP BY m.mapname
+        ORDER BY total DESC
     `).all(...params);
   },
   getPlayerWinsByGod(profileId, {after = 0}) {
@@ -133,8 +135,9 @@ const PlayerMatchesRepo = (db) => ({
           COUNT(CASE WHEN win = 1 THEN 1 END) * 100.0 / COUNT(*),
             2
         ) AS winrate_percent
-      FROM player_matches
-      WHERE profile_id = ? AND startgametime > ?
+      FROM player_matches pm
+         JOIN matches m ON m.match_id = pm.match_id
+      WHERE profile_id = ? AND m.startgametime > ?
       GROUP BY god
       ORDER BY total_games DESC
     `).all(profileId, after);

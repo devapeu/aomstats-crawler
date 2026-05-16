@@ -28,14 +28,15 @@ const PlayerMatchesRepo = (db) => ({
 
     tx(rows);
   },
-  getMatchCount(profileId, god) {
+  getMatchCount(profileId, match_id, god) {
     let query = `
         SELECT COUNT(*) as count
         FROM player_matches
         WHERE profile_id = ?
+        AND match_id < ?
     `;
 
-    const params = [profileId];
+    const params = [profileId, match_id];
 
     if (god !== null) {
       query += ` AND god = ?`;

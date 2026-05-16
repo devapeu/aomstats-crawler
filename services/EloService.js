@@ -25,25 +25,6 @@ function isValidMatch(team1, team2) {
   return true;
 }
 
-const matchCountCache = new Map();
-
-function getMatchCountCached(profileId, scopeType, scopeKey = null) {
-  const key = `${profileId}:${scopeType}:${scopeKey ?? "global"}`;
-
-  if (matchCountCache.has(key)) {
-    return matchCountCache.get(key);
-  }
-
-  const count = PlayerMatches.getMatchCount(
-    profileId,
-    scopeType === SCOPE.GOD ? scopeKey : null
-  );
-
-  matchCountCache.set(key, count);
-
-  return count;
-}
-
 const EloService = {
   getTeamEloSum(team, scopeType) {
     return team.reduce((sum, player) => {
@@ -60,7 +41,7 @@ const EloService = {
     }, 0);
   },
 
-  updateTeamElo(team, change, teamSize, scopeType = SCOPE.GLOBAL) {
+  updateTeamElo(team, change, teamSize, scopeType = SCOPE.GLOBAL, match_id) {
     for (const player of team) {
       let scopeKey = "";
       if (scopeType === SCOPE.GOD) {
@@ -73,9 +54,10 @@ const EloService = {
         scopeKey
       );
 
-      const matchCount = getMatchCountCached(
+      const matchCount = PlayerMatches.getMatchCount(
         player.profile_id,
-        scopeKey
+        match_id,
+        scopeType === SCOPE.GOD ? scopeKey : null,
       );
 
       const activityFactor =
@@ -135,8 +117,8 @@ const EloService = {
     const deltaTeam2 =
       ELO_K_FACTOR * (result2 - (1 - expectedTeam1));
 
-    this.updateTeamElo(team1, deltaTeam1, team1Size, scopeType);
-    this.updateTeamElo(team2, deltaTeam2, team2Size, scopeType);
+    this.updateTeamElo(team1, deltaTeam1, team1Size, scopeType, match.match_id);
+    this.updateTeamElo(team2, deltaTeam2, team2Size, scopeType, match.match_id);
   },
 
   updateEloForMatches({
@@ -154,6 +136,7 @@ const EloService = {
         match,
         scopeType,
       );
+      Elo.updateLastProcessedMatch(match.match_id, scopeType);
     }
   },
 };

@@ -61,7 +61,7 @@ db.exec(`
         meta_key   TEXT,
         meta_value TEXT,
         scope      TEXT,
-        PRIMARY KEY (meta_key, meta_value, scope)
+        PRIMARY KEY (meta_key, scope)
     );
 `);
 

@@ -107,13 +107,13 @@ const EloRepo = (db) => ({
     return row?.meta_value ?? null;
   },
 
-  updateLastProcessedMatch(matchId) {
+  updateLastProcessedMatch(matchId, scope = SCOPE.GLOBAL) {
     return db.prepare(`
-        INSERT INTO player_elo_meta (meta_key, meta_value)
-        VALUES ('last_processed_match', ?)
-        ON CONFLICT(meta_key)
+        INSERT INTO player_elo_meta (meta_key, meta_value, scope)
+        VALUES ('last_processed_match', ?, ?)
+        ON CONFLICT(meta_key, scope)
             DO UPDATE SET meta_value = excluded.meta_value
-    `).run(matchId);
+    `).run(matchId, scope);
   },
 });
 

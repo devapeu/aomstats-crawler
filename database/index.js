@@ -1,14 +1,8 @@
 const Database = require('better-sqlite3');
-const {insertMatches, deleteAsymmetricalMatches, computeAndUpdateTeamMatchIds} = require('../models/matches');
-const {updateEloForMatches, getPlayerElo} = require('../services/elo');
-const PLAYERS = require('../players');
-const {ELO_DEFAULT} = require('../config/eloConfig');
+const { ELO_DEFAULT } = require('../config/eloConfig');
 
 // Open or create DB
 const db = new Database('./db.sqlite');
-
-// Use player IDs (keys) to perform loops
-const playerIds = Object.keys(PLAYERS);
 
 db.exec("PRAGMA foreign_keys = ON");
 
@@ -45,7 +39,6 @@ db.exec(`
         PRIMARY KEY (match_id, profile_id),
         FOREIGN KEY (match_id) REFERENCES matches(match_id),
         FOREIGN KEY (profile_id) REFERENCES players(profile_id)
-        
     )
 `);
 
@@ -93,9 +86,4 @@ db.exec(`
 
 module.exports = {
   db,
-  playerIds,
-  insertMatches: (matches) => insertMatches(db, matches),
-  deleteAsymmetricalMatches: () => deleteAsymmetricalMatches(db),
-  computeAndUpdateTeamMatchIds: () => computeAndUpdateTeamMatchIds(db),
-  updateEloForMatches: () => updateEloForMatches(db),
 };

@@ -70,6 +70,7 @@ const PlayerMatchesRepo = (db) => ({
   getPlayerRelationshipWins(profileId, {
     type = 'rival',
     players = null,
+    god = null,
     after = 0,
   } = {}) {
 
@@ -87,6 +88,12 @@ const PlayerMatchesRepo = (db) => ({
       params = [profileId, after, ...players];
     }
 
+    let godFilterCondition = '';
+    if (god !== null) {
+      godFilterCondition = `AND pm.god = ?`;
+      params.push(god)
+    }
+
     return db.prepare(`
         SELECT pm2.profile_id,
                SUM(pm.win) AS wins,
@@ -99,7 +106,9 @@ const PlayerMatchesRepo = (db) => ({
         WHERE pm.profile_id = ?
           AND ${teamCondition}
           AND pm.profile_id != pm2.profile_id
-          AND m.startgametime > ? ${playerFilterCondition}
+          AND m.startgametime > ? 
+            ${playerFilterCondition}
+            ${godFilterCondition}
         GROUP BY pm2.profile_id
     `).all(...params);
   },

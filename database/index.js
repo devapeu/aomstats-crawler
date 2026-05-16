@@ -47,7 +47,7 @@ db.exec(`
     (
         profile_id   INTEGER,
         scope_type   TEXT,
-        scope_key    TEXT,
+        scope_key    TEXT NOT NULL DEFAULT '',
         elo          REAL DEFAULT ${ELO_DEFAULT},
         last_updated INTEGER,
         PRIMARY KEY (profile_id, scope_type, scope_key),

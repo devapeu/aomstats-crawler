@@ -2,7 +2,7 @@ node_modules
 .DS_Store
 matches.csv
 db.sqlite
-players.js
+/players.js
 .env
 /backups
 /cron_errors.log

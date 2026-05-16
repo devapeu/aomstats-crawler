@@ -1,13 +1,12 @@
-const {EloRepo, SCOPE} = require('../models/elo');
-const {MatchRepo} = require('../models/matches');
-
+const { EloRepo, SCOPE } = require('../models/elo');
+const { PlayerMatchesRepo } = require("../models/playerMatches");
+const { MatchRepo } = require('../models/matches');
 const {
-  ELO_SIZE_ADVANTAGE_PER_PLAYER,
+  ELO_BETA_FACTOR,
+  ELO_SCALE,
+  ELO_K_FACTOR,
+  MATCH_COUNT_FACTOR
 } = require('../config/eloConfig');
-
-const {
-  calculateEloChange,
-} = require('../utils/elo');
 
 function isValidMatch(team1, team2) {
   if (!team1.length || !team2.length) {
@@ -23,8 +22,8 @@ function isValidMatch(team1, team2) {
 }
 
 const EloService = {
-  getAverageElo(team, scopeType, scopeKey) {
-    const total = team.reduce((sum, player) => {
+  getTeamEloSum(team, scopeType) {
+    return team.reduce((sum, player) => {
       let scopeKey = null;
       if (scopeType === "god") scopeKey = player.god;
       return (
@@ -36,86 +35,85 @@ const EloService = {
         )
       );
     }, 0);
-
-    return total / team.length;
   },
 
-  updateTeamElo(
-    team,
-    change,
-    scopeType,
-  ) {
+  updateTeamElo(team, change, teamSize, scopeType = SCOPE.GLOBAL) {
     for (const player of team) {
       let scopeKey = null;
-      if (scopeType === "god") scopeKey = player.god;
+      if (scopeType === "god") {
+        scopeKey = player.god;
+      }
 
-      const currentElo =
-        EloRepo.getElo(
-          player.profile_id,
-          scopeType,
-          scopeKey
-        );
+      const currentElo = EloRepo.getElo(
+        player.profile_id,
+        scopeType,
+        scopeKey
+      );
+
+      const matchCount = PlayerMatchesRepo.getMatchCount(
+        player.profile_id,
+        scopeKey
+      );
+
+      const activityFactor =
+        matchCount === 0
+          ? 1
+          : matchCount > MATCH_COUNT_FACTOR
+            ? 0.4
+            : 0.4 + 0.6 * (
+            (MATCH_COUNT_FACTOR - matchCount) /
+            MATCH_COUNT_FACTOR
+          );
+
+      const teamSizeFactor = 1 / Math.sqrt(teamSize);
+
+      const playerDelta =
+        change * teamSizeFactor * activityFactor;
+
+      const newElo = currentElo + playerDelta;
 
       EloRepo.upsertElo(
         player.profile_id,
         scopeType,
         scopeKey,
-        currentElo + change
+        newElo
       );
     }
   },
 
-  updateMatchElo(
-    match,
-    scopeType = SCOPE.GLOBAL,
-  ) {
+  updateMatchElo(match, scopeType = SCOPE.GLOBAL) {
     const team1 = match.team_a || [];
     const team2 = match.team_b || [];
 
-    if (!isValidMatch(team1, team2)) {
-      return;
-    }
+    if (!isValidMatch(team1, team2)) return;
 
-    const team1Elo =
-      this.getAverageElo(
-        team1,
-        scopeType,
-      );
+    const team1Elo = this.getTeamEloSum(team1, scopeType);
+    const team2Elo = this.getTeamEloSum(team2, scopeType);
 
-    const team2Elo =
-      this.getAverageElo(
-        team2,
-        scopeType,
-      );
-
-    const sizeAdvantage =
-      (team1.length - team2.length) *
-      ELO_SIZE_ADVANTAGE_PER_PLAYER;
+    const team1Size = team1.length;
+    const team2Size = team2.length;
 
     const adjustedTeam1Elo =
-      team1Elo + sizeAdvantage;
+      team1Elo + ELO_BETA_FACTOR * Math.log(team1Size);
 
-    const team1Won =
-      team1[0]?.win === 1;
+    const adjustedTeam2Elo =
+      team2Elo + ELO_BETA_FACTOR * Math.log(team2Size);
 
-    const eloChange =
-      calculateEloChange(
-        adjustedTeam1Elo,
-        team2Elo,
-        team1Won ? 1 : 0
-      );
+    const expectedTeam1 =
+      1 / (1 + Math.pow(10, (adjustedTeam2Elo - adjustedTeam1Elo) / ELO_SCALE));
 
-    this.updateTeamElo(
-      team1,
-      eloChange,
-      scopeType,
-    );
+    const team1Won = team1[0]?.win === 1;
 
-    this.updateTeamElo(
-      team2,
-      -eloChange,
-      scopeType,
-    );
+    const result1 = team1Won ? 1 : 0;
+    const result2 = 1 - result1;
+
+    const deltaTeam1 =
+      ELO_K_FACTOR * (result1 - expectedTeam1);
+    const deltaTeam2 =
+      ELO_K_FACTOR * (result2 - (1 - expectedTeam1));
+
+    this.updateTeamElo(team1, deltaTeam1, team1Size, scopeType);
+    this.updateTeamElo(team2, deltaTeam2, team2Size, scopeType);
   },
 
   updateEloForMatches({

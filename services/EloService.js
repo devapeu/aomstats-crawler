@@ -26,6 +26,12 @@ function isValidMatch(team1, team2) {
 }
 
 const EloService = {
+  getElo(profileId, scopeType, scopeKey) {
+    return Elo.getElo(profileId, scopeType, scopeKey);
+  },
+  getAllElo(profileId) {
+    return Elo.getAllElo(profileId);
+  },
   getTeamEloSum(team, scopeType) {
     return team.reduce((sum, player) => {
       let scopeKey = null;

@@ -31,7 +31,7 @@ const EloRepo = (db) => ({
         last_updated
       FROM player_elo
       WHERE profile_id = ?
-      ORDER BY scope_type, scope_key
+      ORDER BY elo DESC, scope_type, scope_key
     `).all(profileId);
   },
 

@@ -28,6 +28,24 @@ const PlayerMatchesRepo = (db) => ({
 
     tx(rows);
   },
+  getMatchCount(profileId, god) {
+    let query = `
+        SELECT COUNT(*) as count
+        FROM player_matches
+        WHERE profile_id = ?
+    `;
+
+    const params = [profileId];
+
+    if (god !== null) {
+      query += ` AND god = ?`;
+      params.push(god);
+    }
+
+    const row = db.prepare(query).get(...params);
+
+    return row.count ?? 0;
+  },
   getPlayerWins(teamMatchId, profileId, {
     scope = 'global'
   }) {
@@ -106,7 +124,7 @@ const PlayerMatchesRepo = (db) => ({
         GROUP BY m.mapname
     `).all(...params);
   },
-  getPlayerWinsByGod(profileId, { after = 0 }) {
+  getPlayerWinsByGod(profileId, {after = 0}) {
     return db.prepare(`
       SELECT 
         god,

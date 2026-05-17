@@ -34,7 +34,7 @@ const EloService = {
   },
   getTeamEloSum(team, scopeType) {
     return team.reduce((sum, player) => {
-      let scopeKey = null;
+      let scopeKey = "";
       if (scopeType === SCOPE.GOD) scopeKey = player.god;
       return (
         sum +
@@ -98,20 +98,7 @@ const EloService = {
 
     if (!isValidMatch(team1, team2)) return;
 
-    const team1Elo = this.getTeamEloSum(team1, scopeType);
-    const team2Elo = this.getTeamEloSum(team2, scopeType);
-
-    const team1Size = team1.length;
-    const team2Size = team2.length;
-
-    const adjustedTeam1Elo =
-      team1Elo + ELO_BETA_FACTOR * Math.log(team1Size);
-
-    const adjustedTeam2Elo =
-      team2Elo + ELO_BETA_FACTOR * Math.log(team2Size);
-
-    const expectedTeam1 =
-      1 / (1 + Math.pow(10, (adjustedTeam2Elo - adjustedTeam1Elo) / ELO_SCALE));
+    const change = this.calculateChange(team1, team2, scopeType)
 
     const team1Won = team1[0]?.win === 1;
 
@@ -119,9 +106,9 @@ const EloService = {
     const result2 = 1 - result1;
 
     const deltaTeam1 =
-      ELO_K_FACTOR * (result1 - expectedTeam1);
+      ELO_K_FACTOR * (result1 - change);
     const deltaTeam2 =
-      ELO_K_FACTOR * (result2 - (1 - expectedTeam1));
+      ELO_K_FACTOR * (result2 - (1 - change));
 
     this.updateTeamElo(team1, deltaTeam1, team1Size, scopeType, match.match_id);
     this.updateTeamElo(team2, deltaTeam2, team2Size, scopeType, match.match_id);
@@ -143,6 +130,23 @@ const EloService = {
       Elo.updateLastProcessedMatch(match.match_id, scopeType);
     }
   },
+  calculateChange(team1, team2, scope = SCOPE.GLOBAL) {
+    const team1Elo = EloService.getTeamEloSum(
+      team1.map(p => ({ profile_id: p.profile_id, key: scope === 'god' ? p.god : "" })), scope);
+    const team2Elo = EloService.getTeamEloSum(
+      team2.map(p => ({ profile_id: p.profile_id, key: scope === 'god' ? p.god : "" })), scope);
+
+    const team1Size = team1.length;
+    const team2Size = team2.length;
+
+    const adjustedTeam1Elo =
+      team1Elo + ELO_BETA_FACTOR * Math.log(team1Size);
+
+    const adjustedTeam2Elo =
+      team2Elo + ELO_BETA_FACTOR * Math.log(team2Size);
+
+    return 1 / (1 + Math.pow(10, (adjustedTeam2Elo - adjustedTeam1Elo) / ELO_SCALE));;
+  }
 };
 
 module.exports = {

@@ -1,7 +1,5 @@
 const {
-  ELO_SIZE_ADVANTAGE_PER_PLAYER,
   WIN_PROB_SIZE_MULTIPLIER_BASE,
-  ELO_DIVISOR
 } = require('../config/eloConfig');
 
 const { EloRepo } = require('../models/elo');
@@ -12,6 +10,7 @@ const Elo = EloRepo(db);
 const PlayerMatches = PlayerMatchesRepo(db);
 
 const { buildMatchupIdFromTeams } = require('../utils/buildMatchupId');
+const { EloService } = require("./EloService");
 
 const MatchupService = {
   getMatchupScore(team1, team2) {
@@ -40,28 +39,7 @@ const MatchupService = {
     return [team1Wins, team2Wins];
   },
   getMatchupOdds(team1, team2, scope = 'global') {
-    const team1Size = team1.length;
-    const team2Size = team2.length;
-
-    let playerElo = null;
-    let entries = null;
-    if (scope === 'god') {
-      entries = [...team1, ...team2].map(p => ({...p, key: p.god }))
-    } else {
-      entries = [...team1, ...team2].map(p => ({...p, key: "" }));
-    }
-
-    playerElo = Elo.getManyElo(entries, scope);
-    const getElo = (id) => playerElo.find(r => r.profile_id === id)?.elo || 0
-
-    const team1Elo = team1.reduce((sum, p) => sum + getElo(p.profile_id), 0) / team1Size;
-    const team2Elo = team2.reduce((sum, p) => sum + getElo(p.profile_id), 0) / team2Size;
-
-    // Adjust for team size differences - each extra player provides ~250 Elo advantage
-    const sizeAdvantage = (team1Size - team2Size) * ELO_SIZE_ADVANTAGE_PER_PLAYER;
-    const adjustedTeam1Elo = team1Elo + sizeAdvantage;
-
-    const eloProbability = 1 / (1 + Math.pow(10, (team2Elo - adjustedTeam1Elo) / ELO_DIVISOR));
+    const eloProbability = EloService.calculateChange(team1, team2, scope);
 
     // Method 2: Historical win rate-based probability
     let historicalLogits = [];

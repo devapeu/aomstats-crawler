@@ -1,10 +1,6 @@
-const { MatchesRepo } = require('../models/matches');
 const { PlayerMatchesRepo } = require("../models/playerMatches");
-const { PlayersRepo } = require("../models/players");
 const { db } = require("../database");
 
-const Matches = MatchesRepo(db);
-const Players = PlayersRepo(db);
 const PlayerMatches = PlayerMatchesRepo(db);
 
 const PlayerMatchesService = {

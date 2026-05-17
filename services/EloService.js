@@ -13,16 +13,14 @@ const {
 } = require('../config/eloConfig');
 
 function isValidMatch(team1, team2) {
-  if (!team1.length || !team2.length) {
-    return false;
-  }
+  const t1Size = team1.length;
+  const t2Size = team2.length;
 
-  // Ignore 1v1
-  if (team1.length === 1 && team2.length === 1) {
-    return false;
-  }
+  const bothTeamsExist = t1Size > 0 && t2Size > 0;
+  const isOneVsOne = t1Size === 1 && t2Size === 1;
+  const sizeDifferenceTooLarge = Math.abs(t1Size - t2Size) >= 2;
 
-  return true;
+  return bothTeamsExist && !isOneVsOne && !sizeDifferenceTooLarge;
 }
 
 const EloService = {
@@ -97,6 +95,9 @@ const EloService = {
     const team2 = JSON.parse(match.team_b).filter(Boolean) || [];
 
     if (!isValidMatch(team1, team2)) return;
+
+    const team1Size = team1.length;
+    const team2Size = team2.length;
 
     const change = this.calculateChange(team1, team2, scopeType)
 

@@ -5,7 +5,9 @@ const crawlPlayerMatches = async (profileId, beforeLimit) => {
   while (true) {
     const url = `https://aomstats.io/api/profile/${profileId}/matches?leaderboard=0&before=${before}`;
     const res = await fetch(url);
-    const matches = await res.json();
+    const matches = await res.json()
+
+    console.log(`Fetching ${url}`);
 
     if (!matches.length) break;
 

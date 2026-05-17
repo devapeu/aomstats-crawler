@@ -54,8 +54,6 @@ const PlayerMatchesRepo = (db) => ({
 
     if (scope === 'god') {
       matchupIdCondition = "AND m.team_god_match_id = ?"
-    } else if (scope === 'civ') {
-      matchupIdCondition = "AND m.team_civ_match_id = ?"
     } else {
       matchupIdCondition = "AND m.team_match_id = ?"
     }

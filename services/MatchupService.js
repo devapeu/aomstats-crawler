@@ -48,7 +48,7 @@ const MatchupService = {
     if (scope === 'god') {
       entries = [...team1, ...team2].map(p => ({...p, key: p.god }))
     } else {
-      entries = [...team1, ...team2].map(p => ({...p, key: null }));
+      entries = [...team1, ...team2].map(p => ({...p, key: "" }));
     }
 
     playerElo = Elo.getManyElo(entries, scope);

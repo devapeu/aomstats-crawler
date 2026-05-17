@@ -97,7 +97,6 @@ router.get('/elo/:profile_id', (req, res) => {
   );
 
   res.json({
-    profile_id: profileId,
     elo: elo
   });
 });

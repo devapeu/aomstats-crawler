@@ -114,7 +114,7 @@ router.get('/elos/:profile_id', (req, res) => {
   res.json({
     elos: rows.map(row => ({
       elo: row.elo,
-      god: row.god === '' ? null : row.god,
+      god: row.scope_key,
     })),
   })
 })

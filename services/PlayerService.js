@@ -8,8 +8,7 @@ const PlayerService = {
     return Players.getAll();
   },
   getAllPlayersIds() {
-    const players = Players.getAll();
-
+    const players = this.getAllPlayers();
     return players.map(player => player.profile_id);
   }
 };

@@ -32,10 +32,11 @@ const normalizeTeam = (team, scope) => {
 };
 
 const buildMatchupIdFromTeams = (team1, team2, scope = "player") => {
-  const t1 = normalizeTeam(team1, scope).join(",");
-  const t2 = normalizeTeam(team2, scope).join(",");
+  const t1 = normalizeTeam(team1, scope);
+  const t2 = normalizeTeam(team2, scope);
 
-  return `${t1} vs ${t2}`;
+  const sortedTeams = [t1, t2].sort((a, b) => a.join(',').localeCompare(b.join(',')))
+  return sortedTeams.map(t => t.join(',')).join(' vs ')
 };
 
 module.exports = {

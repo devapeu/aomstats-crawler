@@ -1,7 +1,6 @@
 const express = require('express');
+const {MatchupService} = require("../services/MatchupService");
 const router = express.Router();
-const { calculateWinProbability, getWins } = require('../services/matchup');
-const { db } = require('../database');
 
 router.post('/matchup', async (req, res) => {
   try {
@@ -13,11 +12,11 @@ router.post('/matchup', async (req, res) => {
       });
     }
     // Coerce all IDs to strings
-    const team1Str = team1.map(String);
-    const team2Str = team2.map(String);
+    const team1Str = team1.map(p => String(p.profile_id));
+    const team2Str = team2.map(p => String(p.profile_id));
 
-    const probability = await calculateWinProbability(db, team1Str, team2Str);
-    const [team1Wins, team2Wins] = await getWins(db, team1Str, team2Str);
+    const probability = MatchupService.getMatchupOdds(team1, team2);
+    const wins = MatchupService.getMatchupScore(team1, team2);
 
     const team1Probability = Math.round(probability * 10000) / 100;
     const team2Probability = 100 - team1Probability;
@@ -25,8 +24,8 @@ router.post('/matchup', async (req, res) => {
     res.json({
       code: 200,
       data: {
-        [team1Str.join(',')]: { wins: team1Wins, probability: team1Probability },
-        [team2Str.join(',')]: { wins: team2Wins, probability: team2Probability },
+        [team1Str.join(',')]: { wins: wins[0], probability: team1Probability },
+        [team2Str.join(',')]: { wins: wins[1], probability: team2Probability },
       }
     });
 
@@ -34,7 +33,7 @@ router.post('/matchup', async (req, res) => {
     console.error('Error computing matchup data:', e);
     res.status(500).json({
       code: 500,
-      message: err.message || 'Internal server error.'
+      message: e.message || 'Internal server error.'
     });
   }
 });

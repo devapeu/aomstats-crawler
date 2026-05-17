@@ -102,6 +102,10 @@ const MatchService = {
 
         return result;
     },
+    getLatestDate() {
+        const row = db.prepare(`SELECT MAX(startgametime) as latest FROM matches`).get();
+        return row?.latest ?? 0;
+    }
 }
 
 module.exports = {

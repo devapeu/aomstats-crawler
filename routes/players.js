@@ -1,16 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { crawlPlayerMatches } = require('../services/aomstats');
 
 const { PlayerMatchesService } = require("../services/PlayerMatchesService");
 const { EloService } = require("../services/EloService");
-
-router.get('/fetch/:profileId', async (req, res) => {
-  const { profileId } = req.params;
-  const matches = await crawlPlayerMatches(profileId);
-  insertMatches(matches);
-  res.send(`Fetched and saved ${matches.length} matches for profile ${profileId}`);
-});
 
 router.get('/gods/:profile_id', (req, res) => {
   const after = req.query.after ?? 0;

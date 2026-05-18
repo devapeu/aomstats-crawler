@@ -87,7 +87,7 @@ router.get('/winstreak/:profile_id', (req, res) => {
 
 router.get('/elo/:profile_id', (req, res) => {
   const profileId = req.params.profile_id;
-  const god = req.query.god ?? null;
+  const god = req.query.god ?? '';
   const scope = god ? 'god' : 'global';
 
   const elo = EloService.getElo(

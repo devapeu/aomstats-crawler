@@ -25,19 +25,25 @@ const PlayerMatchesRepo = (db) => ({
 
     tx(rows);
   },
-  getMatchCount(profileId, match_id, god) {
+  getMatchCount(profileId, match_id, god, date) {
     let query = `
         SELECT COUNT(*) as count
-        FROM player_matches
-        WHERE profile_id = ?
-        AND match_id < ?
+        FROM player_matches pm
+        JOIN matches m ON m.match_id = pm.match_id
+        WHERE pm.profile_id = ?
+        AND pm.match_id < ?
     `;
 
     const params = [profileId, match_id];
 
     if (god !== null) {
-      query += ` AND god = ?`;
+      query += ` AND pm.god = ?`;
       params.push(god);
+    }
+
+    if (date !== null) {
+      query += ` AND m.startgametime > ?`;
+      params.push(date);
     }
 
     const row = db.prepare(query).get(...params);

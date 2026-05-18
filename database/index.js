@@ -65,6 +65,23 @@ db.exec(`
     );
 `);
 
+db.exec(
+  `CREATE TABLE IF NOT EXISTS player_elo_history
+   (
+       id         INTEGER PRIMARY KEY AUTOINCREMENT,
+       profile_id INTEGER NOT NULL,
+       match_id   INTEGER NOT NULL,
+       scope_type TEXT    NOT NULL,
+       scope_key  TEXT     DEFAULT '',
+       old_elo    REAL    NOT NULL,
+       new_elo    REAL    NOT NULL,
+       delta      REAL    NOT NULL,
+       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+       UNIQUE (profile_id, match_id, scope_type, scope_key)
+   );`
+)
+
 db.exec(`
     CREATE TABLE IF NOT EXISTS tournaments
     (

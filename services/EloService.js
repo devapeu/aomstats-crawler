@@ -62,6 +62,7 @@ const EloService = {
         player.profile_id,
         match_id,
         scopeType === SCOPE.GOD ? scopeKey : null,
+        Date.now() - 15 * 24 * 60 * 60
       );
 
       const activityFactor =
@@ -87,6 +88,16 @@ const EloService = {
         scopeKey,
         newElo
       );
+
+      Elo.logEloChange({
+        profile_id: player.profile_id,
+        match_id,
+        scopeType,
+        scopeKey,
+        oldElo: currentElo,
+        newElo,
+        delta: playerDelta,
+      });
     }
   },
 
@@ -147,6 +158,9 @@ const EloService = {
       team2Elo + ELO_BETA_FACTOR * Math.log(team2Size);
 
     return 1 / (1 + Math.pow(10, (adjustedTeam2Elo - adjustedTeam1Elo) / ELO_SCALE));;
+  },
+  getEloHistory(profileId, scopeType, scopeKey = "") {
+    return Elo.getEloHistory(profileId, scopeType, scopeKey);
   }
 };
 

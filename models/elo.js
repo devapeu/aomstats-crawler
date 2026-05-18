@@ -115,6 +115,49 @@ const EloRepo = (db) => ({
             DO UPDATE SET meta_value = excluded.meta_value
     `).run(matchId, scope);
   },
+
+  logEloChange({
+                 profile_id,
+                 match_id,
+                 scopeType,
+                 scopeKey = "",
+                 oldElo,
+                 newElo,
+                 delta,
+               }) {
+    return db.prepare(`
+    INSERT OR IGNORE INTO player_elo_history (
+      profile_id,
+      match_id,
+      scope_type,
+      scope_key,
+      old_elo,
+      new_elo,
+      delta
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+      profile_id,
+      match_id,
+      scopeType,
+      scopeKey,
+      oldElo,
+      newElo,
+      delta
+    );
+  },
+
+  getEloHistory(profile_id, scopeType, scopeKey = "") {
+    return db.prepare(`
+    SELECT *
+    FROM player_elo_history
+    WHERE profile_id = ?
+      AND scope_type = ?
+      AND scope_key = ?
+    ORDER BY match_id ASC
+  `).all(profile_id, scopeType, scopeKey);
+  }
+
 });
 
 module.exports = {

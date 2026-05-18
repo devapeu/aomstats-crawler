@@ -4,6 +4,8 @@ const path = require('path');
 const dbPath = path.resolve(__dirname, '..', 'db.sqlite');
 const db = new Database(dbPath);
 
+require('../database');
+
 db.exec(`DELETE FROM player_elo_meta`);
 
 db.exec(`
@@ -12,3 +14,6 @@ db.exec(`
     VALUES ('last_processed_match', 0, 'global'),
            ('last_processed_match', 0, 'god')
 `);
+
+db.exec(`DELETE FROM player_elo`);
+db.exec(`DELETE FROM player_elo_history`);

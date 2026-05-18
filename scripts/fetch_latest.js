@@ -17,6 +17,7 @@ const { PlayerService } = require("../services/PlayerService");
     console.log(`Fetching games for Player ID: ${p}`);
     const matches = await crawlPlayerMatches(p, latestMatchDate);
     for (const m of matches) {
+      if (m.profile_id === 1076671413) { m.profile_id = 1074199836; }
       const key = `${m.match_id}-${m.profile_id}`;
       if (!seen.has(key)) {
         seen.add(key);

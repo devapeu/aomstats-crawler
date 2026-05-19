@@ -31,12 +31,28 @@ const MatchupService = {
     let team1Wins = 0;
     let team2Wins = 0;
 
-    for (const {win} of playerScore) {
-      if (win === 1) team1Wins++;
-      else team2Wins++;
-    }
+    const history = playerScore.map(match => {
+      const team1Won = match.win === 1;
 
-    return [team1Wins, team2Wins];
+      if (team1Won) {
+        team1Wins++;
+      } else {
+        team2Wins++;
+      }
+
+      return {
+        match_id: match.match_id,
+        mapname: match.mapname,
+        startgametime: match.startgametime,
+        winners: team1Won ? team1 : team2,
+        losers: team1Won ? team2 : team1,
+      };
+    });
+
+    return {
+      score: [team1Wins, team2Wins],
+      history,
+    };
   },
   getMatchupOdds(team1, team2, scope = 'global') {
     const eloProbability = EloService.calculateChange(team1, team2, scope);

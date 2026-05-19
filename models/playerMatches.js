@@ -62,7 +62,11 @@ const PlayerMatchesRepo = (db) => ({
     }
 
     return db.prepare(`
-        SELECT pm.win
+        SELECT
+            pm.match_id,
+            m.mapname,
+            m.startgametime,
+            pm.win
         FROM player_matches pm
                  JOIN matches m ON m.match_id = pm.match_id
         WHERE pm.profile_id = ? ${matchupIdCondition}

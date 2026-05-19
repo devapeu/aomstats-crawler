@@ -16,7 +16,7 @@ router.post('/matchup', async (req, res) => {
     const team2Str = team2.map(p => String(p.profile_id));
 
     const probability = MatchupService.getMatchupOdds(team1, team2);
-    const wins = MatchupService.getMatchupScore(team1, team2);
+    const { score, history } = MatchupService.getMatchupScore(team1, team2);
 
     const team1Probability = Math.round(probability * 10000) / 100;
     const team2Probability = 100 - team1Probability;
@@ -24,8 +24,11 @@ router.post('/matchup', async (req, res) => {
     res.json({
       code: 200,
       data: {
-        [team1Str.join(',')]: { wins: wins[0], probability: team1Probability },
-        [team2Str.join(',')]: { wins: wins[1], probability: team2Probability },
+        teams: {
+          [team1Str.join(',')]: { wins: score[0], probability: team1Probability },
+          [team2Str.join(',')]: { wins: score[1], probability: team2Probability },
+        },
+        history : history,
       }
     });
 

@@ -31,7 +31,7 @@ const normalizeTeam = (team, scope) => {
     .sort((a, b) => a.localeCompare(b));
 };
 
-const buildMatchupIdFromTeams = (team1, team2, scope = "player") => {
+const buildMatchupIdFromTeams = (team1, team2, scope = "global") => {
   const t1 = normalizeTeam(team1, scope);
   const t2 = normalizeTeam(team2, scope);
 

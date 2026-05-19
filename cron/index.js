@@ -1,7 +1,7 @@
 const cron = require('node-cron');
 const fs = require('fs');
 const path = require('path');
-import { crawlFromAPI } from '../services/aomstats';
+const { crawlFromAPI } = require('../services/aomstats');
 
 // Database backup cron job - runs weekly on Sunday at 9:30 AM (Server Time)
 cron.schedule('30 9 * * 0', () => {

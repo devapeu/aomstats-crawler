@@ -1,3 +1,3 @@
-import { crawlFromAPI } from '../services/aomstats';
+const { crawlFromAPI } = require('../services/aomstats');
 
 await crawlFromAPI();

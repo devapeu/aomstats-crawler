@@ -24,15 +24,16 @@ const MatchupService = {
     const team_match_id = buildMatchupIdFromTeams(team1, team2, scope);
     const profile_id = team1[0].profile_id;
 
-    const playerScore = PlayerMatches.getPlayerWins(team_match_id, profile_id, {
+    const matchHistory = PlayerMatches.getPlayerWins(team_match_id, profile_id, {
       scope: scope
     });
 
     let team1Wins = 0;
     let team2Wins = 0;
 
-    const history = playerScore.map(match => {
-      const team1Won = match.win === 1;
+    const history = matchHistory.map(match => {
+      const team1Won = match.target_player_win === 1;
+      const players = JSON.parse(match.players);
 
       if (team1Won) {
         team1Wins++;
@@ -44,8 +45,8 @@ const MatchupService = {
         match_id: match.match_id,
         mapname: match.mapname,
         startgametime: match.startgametime,
-        winners: team1Won ? team1 : team2,
-        losers: team1Won ? team2 : team1,
+        winners: players.filter(p => p.win === 1),
+        losers: players.filter(p => p.win === 0),
       };
     });
 

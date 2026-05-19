@@ -50,26 +50,46 @@ const PlayerMatchesRepo = (db) => ({
 
     return row.count ?? 0;
   },
-  getPlayerWins(teamMatchId, profileId, {
-    scope = 'global'
-  }) {
-    let matchupIdCondition = "";
-
-    if (scope === 'god') {
-      matchupIdCondition = "AND m.team_god_match_id = ?"
-    } else {
-      matchupIdCondition = "AND m.team_match_id = ?"
-    }
+  getPlayerWins(teamMatchId, profileId, { scope = 'global' } = {}) {
+    const matchupIdCondition =
+      scope === 'god'
+        ? "AND m.team_god_match_id = ?"
+        : "AND m.team_match_id = ?";
 
     return db.prepare(`
         SELECT
             pm.match_id,
             m.mapname,
             m.startgametime,
-            pm.win
+            pm.win AS target_player_win,
+
+            json_group_array(
+                    json_object(
+                            'profile_id', players.profile_id,
+                            'name', p.name,
+                            'win', players.win,
+                            'god', players.god
+                    )
+            ) AS players
+
         FROM player_matches pm
-                 JOIN matches m ON m.match_id = pm.match_id
-        WHERE pm.profile_id = ? ${matchupIdCondition}
+                 JOIN matches m
+                      ON m.match_id = pm.match_id
+                 JOIN player_matches players
+                      ON players.match_id = pm.match_id
+                JOIN players p
+                      ON players.profile_id = p.profile_id
+
+        WHERE pm.profile_id = ?
+            ${matchupIdCondition}
+
+        GROUP BY
+            pm.match_id,
+            m.mapname,
+            m.startgametime,
+            pm.win
+
+        ORDER BY m.startgametime DESC
     `).all(profileId, teamMatchId);
   },
   getPlayerRelationshipWins(profileId, {

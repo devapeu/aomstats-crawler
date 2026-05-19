@@ -56,6 +56,9 @@ const MatchupService = {
     };
   },
   getMatchupOdds(team1, team2, scope = 'global') {
+    const team1Size = team1.length;
+    const team2Size = team2.length;
+
     const eloProbability = EloService.calculateChange(team1, team2, scope);
 
     // Method 2: Historical win rate-based probability
@@ -68,7 +71,7 @@ const MatchupService = {
           type: "rivals",
           players: [p2.profile_id]
         });
-        const rivalStats = stats.players?.[p2.profile_id];
+        const rivalStats = stats[0]
         if (rivalStats && rivalStats.total > 0) {
           const winrate = rivalStats.wins / rivalStats.total;
           if (winrate > 0 && winrate < 1) { // Avoid log(0) issues

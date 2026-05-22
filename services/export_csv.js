@@ -7,46 +7,52 @@ const db = new Database(dbPath);
 
 function exportAsCSV() {
     const stmt = db.prepare(`
-      SELECT profile_id, god, win, match_id, team_match_id, startgametime, raw_data
-      FROM matches 
-      ORDER BY match_id
+        SELECT
+            m.match_id,
+            GROUP_CONCAT(
+              CASE WHEN pm.win = 1
+                       THEN p.name || '[' || pm.god || ']'
+                  END,
+              '-'
+            ) AS winners,
+            GROUP_CONCAT(
+              CASE WHEN pm.win = 0
+                       THEN p.name || '[' || pm.god || ']'
+                  END,
+              '-'
+            ) AS losers,
+            m.startgametime AS timestamp,
+            m.duration,
+            CASE
+                WHEN COUNT(*) = 2 THEN 1
+                ELSE 0
+                END AS is_1v1
+        FROM matches m
+                 JOIN player_matches pm
+                      ON pm.match_id = m.match_id
+                 JOIN players p
+                      ON p.profile_id = pm.profile_id
+        GROUP BY m.match_id
+        ORDER BY m.match_id
     `);
 
     const rows = stmt.all();
 
-    // Group rows by match_id
-    const matchesMap = {};
-    rows.forEach(row => {
-        if (!matchesMap[row.match_id]) matchesMap[row.match_id] = [];
-        matchesMap[row.match_id].push(row);
-    });
+    const header =
+      "match_id,winners,losers,timestamp,duration,is_1v1";
 
-    const result = Object.entries(matchesMap).map(([match_id, matchRows]) => {
-        // skip corrupted team_match_id
-        if (!matchRows[0].team_match_id || matchRows[0].team_match_id[0] === " " || matchRows[0].team_match_id.slice(-1) === " ") return;
+    const lines = rows
+      .filter(row => (row.losers && row.winners))
+      .map(row => [
+        row.match_id,
+        row.winners,
+        row.losers,
+        row.timestamp,
+        row.duration,
+        row.is_1v1,
+    ].join(","));
 
-        const hasUnknownPlayer = matchRows.some(r => !PLAYERS[r.profile_id]);
-        if (hasUnknownPlayer) return;
-
-        let is1v1 = false;
-        let timestamp = matchRows[0].startgametime;
-        let duration = JSON.parse(matchRows[0].raw_data).duration;
-
-        const winners = matchRows
-            .filter(r => r.win === 1)
-            .map(r => `${PLAYERS[r.profile_id]}[${r.god}]`);
-
-        const losers = matchRows
-            .filter(r => r.win === 0)
-            .map(r => `${PLAYERS[r.profile_id]}[${r.god}]`);
-
-        if (losers.length === 1 && winners.length === 1) is1v1 = true;
-
-        return `${match_id},${winners.join("-")},${losers.join("-")},${timestamp},${duration},${is1v1}`;
-    }).filter(Boolean);
-
-    const header = "match_id,winners,losers,timestamp,duration,is_1v1";
-    return [header, ...result].join("\n");
+    return [header, ...lines].join("\n");
 }
 
 module.exports = {

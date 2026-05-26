@@ -1,9 +1,9 @@
 // Add ID and name for players you want to track stats of.
-// Use the player's ID in aomstats.io as the key and define a name for them as the value.
+// Add the player's ID in aomstats.io as profile_id and a name for them.
 
 const PLAYERS = {
   // Example
-  // "1234556789": "HilariousAlpaca99"
+  // { profile_id: 123, name: 'Jeff' },
 };
 
 module.exports = PLAYERS;

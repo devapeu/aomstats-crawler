@@ -1,9 +1,9 @@
 const ELO_DEFAULT = 65;
 const ELO_SIZE_ADVANTAGE_PER_PLAYER = 20;
-const ELO_K_FACTOR = 1;
+const ELO_K_FACTOR = 6;
 const WIN_PROB_SIZE_MULTIPLIER_BASE = 1.2;
-const ELO_BETA_FACTOR = 0.5;
-const ELO_SCALE = 30;
+const ELO_BETA_FACTOR = 0;
+const ELO_SCALE = 20;
 const MATCH_COUNT_FACTOR = 12;
 
 module.exports = {

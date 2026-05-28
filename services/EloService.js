@@ -45,7 +45,7 @@ const EloService = {
     }, 0);
   },
 
-  updateTeamElo(team, change, teamSize, scopeType = SCOPE.GLOBAL, match_id) {
+  updateTeamElo(team, change, teamSize, scopeType = SCOPE.GLOBAL, match_id, match_date) {
     for (const player of team) {
       let scopeKey = "";
       if (scopeType === SCOPE.GOD) {
@@ -60,7 +60,8 @@ const EloService = {
 
       const matchCount = PlayerMatches.getMatchCount(
         player.profile_id,
-        match_id,
+        match_date - (15 * 24 * 60 * 60), // 15 days before this game
+        match_date,
         scopeType === SCOPE.GOD ? scopeKey : null,
       );
 
@@ -121,8 +122,8 @@ const EloService = {
     const deltaTeam2 =
       ELO_K_FACTOR * (result2 - (1 - change));
 
-    this.updateTeamElo(team1, deltaTeam1, team1Size, scopeType, match.match_id);
-    this.updateTeamElo(team2, deltaTeam2, team2Size, scopeType, match.match_id);
+    this.updateTeamElo(team1, deltaTeam1, team1Size, scopeType, match.match_id, match.startgametime);
+    this.updateTeamElo(team2, deltaTeam2, team2Size, scopeType, match.match_id, match.startgametime);
   },
 
   updateEloForMatches({

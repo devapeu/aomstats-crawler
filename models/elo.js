@@ -23,15 +23,23 @@ const EloRepo = (db) => ({
   },
 
   getAllElo(profileId) {
+    // returns elo values with more than 15 games
     return db.prepare(`
-      SELECT
-        scope_type,
-        scope_key,
-        elo,
-        last_updated
-      FROM player_elo
-      WHERE profile_id = ?
-      ORDER BY elo DESC, scope_type, scope_key
+        SELECT
+            pe.scope_type,
+            pe.scope_key,
+            pe.elo,
+            pe.last_updated
+        FROM player_elo pe
+        WHERE pe.profile_id = ?
+          AND EXISTS (
+            SELECT 1
+            FROM player_elo_history peh
+            WHERE peh.profile_id = pe.profile_id AND pe.scope_key = peh.scope_key
+            GROUP BY peh.profile_id
+            HAVING COUNT(*) > 15
+        )
+        ORDER BY pe.elo DESC, pe.scope_type, pe.scope_key;
     `).all(profileId);
   },
 

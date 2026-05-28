@@ -25,7 +25,7 @@ const PlayerMatchesRepo = (db) => ({
 
     tx(rows);
   },
-  getMatchCount(profileId, match_id, god, date) {
+  getMatchCount(profileId, match_id, god) {
     let query = `
         SELECT COUNT(*) as count
         FROM player_matches pm
@@ -41,10 +41,7 @@ const PlayerMatchesRepo = (db) => ({
       params.push(god);
     }
 
-    if (date !== null) {
-      query += ` AND m.startgametime > ?`;
-      params.push(date);
-    }
+    query += ` LIMIT 15`;
 
     const row = db.prepare(query).get(...params);
 

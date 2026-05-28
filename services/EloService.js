@@ -62,7 +62,6 @@ const EloService = {
         player.profile_id,
         match_id,
         scopeType === SCOPE.GOD ? scopeKey : null,
-        Date.now() - 15 * 24 * 60 * 60
       );
 
       const activityFactor =
@@ -143,10 +142,8 @@ const EloService = {
     }
   },
   calculateChange(team1, team2, scope = SCOPE.GLOBAL) {
-    const team1Elo = EloService.getTeamEloSum(
-      team1.map(p => ({ profile_id: p.profile_id, key: scope === 'god' ? p.god : "" })), scope);
-    const team2Elo = EloService.getTeamEloSum(
-      team2.map(p => ({ profile_id: p.profile_id, key: scope === 'god' ? p.god : "" })), scope);
+    const team1Elo = this.getTeamEloSum(team1, scope);
+    const team2Elo = this.getTeamEloSum(team2, scope);
 
     const team1Size = team1.length;
     const team2Size = team2.length;

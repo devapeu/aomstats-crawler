@@ -14,7 +14,8 @@ const { EloService } = require("./EloService");
 
 const MatchupService = {
   getMatchupScore(team1, team2) {
-    const teamsIncludeGods = team1.every(p => "god" in p) && team2.every(p => "god" in p);
+    // const teamsIncludeGods = team1.every(p => "god" in p) && team2.every(p => "god" in p);
+    const teamsIncludeGods = false;
 
     const scope =
       teamsIncludeGods
@@ -55,7 +56,7 @@ const MatchupService = {
       history,
     };
   },
-  getMatchupOdds(team1, team2, scope = 'global') {
+  getMatchupOdds(team1, team2, scope = 'god') {
     const team1Size = team1.length;
     const team2Size = team2.length;
 

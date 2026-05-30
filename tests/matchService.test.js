@@ -1,22 +1,56 @@
-jest.mock('../models/matches', () => ({
-  MatchesRepo: {
-    insertMany: jest.fn(),
+jest.mock("../database", () => ({
+  db: {
+    prepare: jest.fn(),
+    transaction: jest.fn(),
   },
 }));
 
+jest.mock('../models/matches', () => ({
+  MatchesRepo: jest.fn(),
+}));
+
 jest.mock('../models/playerMatches', () => ({
-  PlayerMatchesRepo: {
-    insertMany: jest.fn(),
-  },
+  PlayerMatchesRepo: jest.fn(),
+}));
+
+jest.mock('../models/players', () => ({
+  PlayersRepo: jest.fn(),
 }));
 
 const { MatchesRepo } = require('../models/matches');
 const { PlayerMatchesRepo } = require('../models/playerMatches');
+const { PlayersRepo } = require('../models/players');
+
+const mockMatchesInsertMany = jest.fn();
+const mockPlayerMatchesInsertMany = jest.fn();
+const mockPlayersGetAll = jest.fn();
+
+MatchesRepo.mockReturnValue({
+  insertMany: mockMatchesInsertMany,
+});
+
+PlayerMatchesRepo.mockReturnValue({
+  insertMany: mockPlayerMatchesInsertMany,
+});
+
+PlayersRepo.mockReturnValue({
+  getAll: mockPlayersGetAll,
+});
+
 const { MatchService } = require('../services/matchService');
 
 describe('MatchService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPlayersGetAll.mockReturnValue([
+      { profile_id: 1 },
+      { profile_id: 10 },
+      { profile_id: 15 },
+      { profile_id: 20 },
+      { profile_id: 30 },
+      { profile_id: 40 },
+      { profile_id: 99 },
+    ]);
   });
 
   describe('computeTeamMatchIds', () => {
@@ -52,7 +86,7 @@ describe('MatchService', () => {
 
       expect(result.get(1)).toEqual({
         team_match_id: '10,20 vs 30,40',
-        team_god_match_id: "10[zeus],20[ra] vs 30[odin],40[loki]",
+        team_god_match_id: '10[zeus],20[ra] vs 30[odin],40[loki]',
       });
     });
 
@@ -102,7 +136,7 @@ describe('MatchService', () => {
           god: 'ra',
           win: false,
           team: 1,
-          escription: 'RANKED',
+          description: 'RANKED',
           resulttype: 1,
           duration: 1000,
           startgametime: 123456,
@@ -112,7 +146,7 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([
+      expect(mockPlayerMatchesInsertMany).toHaveBeenCalledWith([
         {
           match_id: 1,
           profile_id: 10,
@@ -129,7 +163,7 @@ describe('MatchService', () => {
         },
       ]);
 
-      expect(MatchesRepo.insertMany).toHaveBeenCalledWith([
+      expect(mockMatchesInsertMany).toHaveBeenCalledWith([
         {
           match_id: 1,
           description: 'RANKED',
@@ -137,7 +171,7 @@ describe('MatchService', () => {
           mapname: 'arena',
           duration: 1000,
           team_match_id: '10 vs 20',
-          team_god_match_id: '10[zeus] vs 20[ra]'
+          team_god_match_id: '10[zeus] vs 20[ra]',
         },
       ]);
     });
@@ -184,8 +218,8 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
-      expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(mockPlayerMatchesInsertMany).toHaveBeenCalledWith([]);
+      expect(mockMatchesInsertMany).toHaveBeenCalledWith([]);
     });
 
     it('skips short games', () => {
@@ -206,8 +240,8 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
-      expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(mockPlayerMatchesInsertMany).toHaveBeenCalledWith([]);
+      expect(mockMatchesInsertMany).toHaveBeenCalledWith([]);
     });
 
     it('skips unranked games', () => {
@@ -228,8 +262,8 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
-      expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(mockPlayerMatchesInsertMany).toHaveBeenCalledWith([]);
+      expect(mockMatchesInsertMany).toHaveBeenCalledWith([]);
     });
 
     it('skips desynced games', () => {
@@ -250,8 +284,8 @@ describe('MatchService', () => {
 
       MatchService.storeMatches(matches);
 
-      expect(PlayerMatchesRepo.insertMany).toHaveBeenCalledWith([]);
-      expect(MatchesRepo.insertMany).toHaveBeenCalledWith([]);
+      expect(mockPlayerMatchesInsertMany).toHaveBeenCalledWith([]);
+      expect(mockMatchesInsertMany).toHaveBeenCalledWith([]);
     });
   });
 });

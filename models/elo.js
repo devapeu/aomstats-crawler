@@ -155,17 +155,30 @@ const EloRepo = (db) => ({
     );
   },
 
-  getEloHistory(profile_id, scopeType, scopeKey = "") {
+  getEloHistory(profile_id) {
     return db.prepare(`
-    SELECT *
-    FROM player_elo_history
-    WHERE profile_id = ?
-      AND scope_type = ?
-      AND scope_key = ?
-    ORDER BY match_id ASC
-  `).all(profile_id, scopeType, scopeKey);
+        SELECT p.name,
+               e.scope_key AS god,
+               e.new_elo,
+               datetime(m.startgametime, 'unixepoch') AS date,
+               m.startgametime
+        FROM player_elo_history e
+                 JOIN matches m
+                      ON e.match_id = m.match_id
+                 JOIN players p
+                      ON e.profile_id = p.profile_id
+        WHERE e.scope_type = 'god'
+          AND e.profile_id = ?
+          AND EXISTS (SELECT 1
+                      FROM player_matches pm
+                      WHERE pm.profile_id = e.profile_id
+                        AND pm.god = e.scope_key
+                      GROUP BY pm.profile_id, pm.god
+                      HAVING COUNT(*) >= 15)
+        ORDER BY e.profile_id,
+                 m.startgametime;
+    `).all(profile_id);
   }
-
 });
 
 module.exports = {

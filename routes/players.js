@@ -118,4 +118,31 @@ router.get('/elos/:profile_id', (req, res) => {
   })
 })
 
+router.get('/elo-history/:profile_id', (req, res) => {
+  const profileId = parseInt(req.params.profile_id);
+  const rows = EloService.getEloHistory(profileId);
+
+  if (!rows.length) {
+    return res.json({ message: 'No data found for this player' });
+  }
+
+  const eloHistoryGroups = rows.reduce((acc, row) => {
+    const god = row.god;
+    if (!acc[god]) {
+      acc[god] = []
+    }
+
+    acc[god].push({
+      startgametime: row.startgametime * 1000,
+      elo: row.new_elo,
+    });
+
+    return acc;
+  }, {})
+
+  res.json({
+    rows: eloHistoryGroups
+  })
+});
+
 module.exports = router;

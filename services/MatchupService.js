@@ -6,7 +6,6 @@ const { EloRepo } = require('../models/elo');
 const { PlayerMatchesRepo } = require("../models/playerMatches");
 const { db } = require("../database");
 
-const Elo = EloRepo(db);
 const PlayerMatches = PlayerMatchesRepo(db);
 
 const { buildMatchupIdFromTeams } = require('../utils/buildMatchupId');

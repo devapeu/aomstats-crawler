@@ -218,7 +218,7 @@ const PlayerMatchesRepo = (db) => ({
         FROM player_matches pm
                  JOIN matches m
                       ON m.match_id = pm.match_id
-        WHERE m.startgametime > ?
+        WHERE pm.match_id > ?
         GROUP BY pm.match_id,
                  m.startgametime;
     `).all(after);

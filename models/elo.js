@@ -37,7 +37,7 @@ const EloRepo = (db) => ({
             FROM player_elo_history peh
             WHERE peh.profile_id = pe.profile_id AND pe.scope_key = peh.scope_key
             GROUP BY peh.profile_id
-            HAVING COUNT(*) > 15
+            HAVING COUNT(*) > 9
         )
         ORDER BY pe.elo DESC, pe.scope_type, pe.scope_key;
     `).all(profileId);
@@ -174,7 +174,7 @@ const EloRepo = (db) => ({
                       WHERE pm.profile_id = e.profile_id
                         AND pm.god = e.scope_key
                       GROUP BY pm.profile_id, pm.god
-                      HAVING COUNT(*) >= 15)
+                      HAVING COUNT(*) >= 9)
         ORDER BY e.profile_id,
                  m.startgametime;
     `).all(profile_id);

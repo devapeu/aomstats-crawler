@@ -72,6 +72,29 @@ router.get(
   }
 );
 
+router.get('/maps/:profile_id', (req, res) => {
+  const after = req.query.after ?? 0;
+  const profileId = parseInt(req.params.profile_id);
+  const gods = req.query.god
+    ? req.query.god.split(',').map(g => g.trim())
+    : null;
+
+  const rows = PlayerMatchesService.getPlayerWinsByMap(profileId, { gods, after });
+
+  if (!rows.length) {
+    return res.json({ maps: [], message: 'No data found for this player' });
+  }
+
+  res.json({
+    maps: rows.map(row => ({
+      name: row.mapname,
+      wins: row.wins,
+      total_games: row.total,
+      winrate_percent: Math.round((row.wins / row.total) * 10000) / 100,
+    }))
+  });
+});
+
 router.get('/winstreak/:profile_id', (req, res) => {
   const profileId = parseInt(req.params.profile_id);
   const winstreak = PlayerMatchesService.getPlayerWinstreak(profileId);

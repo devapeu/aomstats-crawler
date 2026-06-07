@@ -1,8 +1,15 @@
+jest.mock("../database", () => ({
+  db: {
+    prepare: jest.fn(),
+    transaction: jest.fn(),
+  },
+}));
+
 jest.mock('../models/playerMatches', () => ({
-  PlayerMatchesRepo: {
+  PlayerMatchesRepo: jest.fn(() => ({
     getPlayerWins: jest.fn(),
     getPlayerRelationshipWins: jest.fn(),
-  }
+  }) )
 }));
 
 jest.mock('../models/elo', () => ({

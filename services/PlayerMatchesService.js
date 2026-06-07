@@ -39,6 +39,9 @@ const PlayerMatchesService = {
   },
   getPlayerWinstreak(profileId) {
     return PlayerMatches.getPlayerWinstreak(profileId);
+  },
+  getPlayerWinsByMap(profileId, { gods = null, after = 0 } = {}) {
+    return PlayerMatches.getPlayerWinsByMap(profileId, { gods, after });
   }
 }
 

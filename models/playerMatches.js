@@ -155,6 +155,7 @@ const PlayerMatchesRepo = (db) => ({
         FROM player_matches pm
                  JOIN matches m ON m.match_id = pm.match_id
         WHERE pm.profile_id = ?
+          AND m.mapname LIKE 'rm_%'
           AND m.startgametime > ?
             ${godFilterCondition}
         GROUP BY m.mapname

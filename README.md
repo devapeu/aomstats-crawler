@@ -185,17 +185,99 @@ node scripts/fetch_latest.js
 
 ## Database schema
 
-The `matches` table is created automatically with the following columns:
+All tables are created automatically in `db.sqlite` on first run. Foreign key constraints are enforced via `PRAGMA foreign_keys = ON`.
 
-- match_id INTEGER
-- profile_id INTEGER
-- description TEXT
-- startgametime INTEGER
-- raw_data TEXT
-- win INTEGER
-- team_match_id TEXT
+### `matches`
 
-Primary key is `(match_id, profile_id)`.
+One row per match. Stores shared match metadata.
+
+| Column | Type | Description |
+|---|---|---|
+| `match_id` | INTEGER PK | Unique match identifier from aomstats.io |
+| `description` | TEXT | Match description string |
+| `startgametime` | INTEGER | Unix timestamp (ms) of match start |
+| `mapname` | TEXT | Map identifier (e.g. `rm_acropolis`) |
+| `duration` | INTEGER | Match duration in seconds |
+| `team_match_id` | TEXT | Canonical identifier for the team composition (sorted profile IDs, e.g. `123,456 vs 789,101`) |
+| `team_god_match_id` | TEXT | Like `team_match_id` but includes god picks |
+
+### `players`
+
+Registry of tracked players.
+
+| Column | Type | Description |
+|---|---|---|
+| `profile_id` | INTEGER PK | aomstats.io profile ID |
+| `name` | TEXT | Display name |
+
+### `player_matches`
+
+One row per (player, match) pair. Links players to matches and stores per-player outcome.
+
+| Column | Type | Description |
+|---|---|---|
+| `match_id` | INTEGER PK/FK | References `matches.match_id` |
+| `profile_id` | INTEGER PK/FK | References `players.profile_id` |
+| `god` | TEXT | God played by this player in this match |
+| `win` | INTEGER | `1` if the player won, `0` otherwise |
+| `team` | INTEGER | Team slot (used to identify teammates vs opponents) |
+
+### `player_elo`
+
+Current ELO rating for each player, broken down by scope.
+
+| Column | Type | Description |
+|---|---|---|
+| `profile_id` | INTEGER PK/FK | References `players.profile_id` |
+| `scope_type` | TEXT PK | Scope category (e.g. `global`, `god`) |
+| `scope_key` | TEXT PK | Scope value (empty string for global, god name for god-scoped) |
+| `elo` | REAL | Current ELO rating |
+| `last_updated` | INTEGER | Unix timestamp of last update |
+
+### `player_elo_history`
+
+Append-only log of every ELO change, one row per (player, match, scope).
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment row ID |
+| `profile_id` | INTEGER | Player |
+| `match_id` | INTEGER | Match that triggered the change |
+| `scope_type` | TEXT | Scope category |
+| `scope_key` | TEXT | Scope value |
+| `old_elo` | REAL | ELO before the match |
+| `new_elo` | REAL | ELO after the match |
+| `delta` | REAL | Change (`new_elo - old_elo`) |
+| `created_at` | DATETIME | Row insertion time |
+
+### `player_elo_meta`
+
+Key-value store for ELO computation bookkeeping (e.g. last processed match per scope).
+
+| Column | Type | Description |
+|---|---|---|
+| `meta_key` | TEXT PK | Key name |
+| `meta_value` | TEXT | Value |
+| `scope` | TEXT PK | Scope this entry applies to |
+
+### `tournaments`
+
+Registry of tournaments.
+
+| Column | Type | Description |
+|---|---|---|
+| `tournament_id` | INTEGER PK | Unique tournament ID |
+| `name` | TEXT | Tournament name |
+| `is_open` | INTEGER | `1` if the tournament is still accepting matches, `0` if closed |
+
+### `tournament_matches`
+
+Many-to-many join between tournaments and matches.
+
+| Column | Type | Description |
+|---|---|---|
+| `tournament_id` | INTEGER PK/FK | References `tournaments.tournament_id` |
+| `match_id` | INTEGER PK | Match belonging to this tournament |
 
 ## Cron job
 

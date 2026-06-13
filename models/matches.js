@@ -23,7 +23,11 @@ const MatchesRepo = (db) => ({
 
     const tx = db.transaction((rows) => {
       for (const row of rows) {
-        stmt.run(row);
+        stmt.run({
+          team_match_id: null,
+          team_god_match_id: null,
+          ...row,
+        });
       }
     });
 

@@ -112,7 +112,7 @@ const EloRepo = (db) => ({
         SELECT meta_value FROM player_elo_meta WHERE meta_key = 'last_processed_match' AND scope = ?
     `).get(scopeType);
 
-    return row?.meta_value ?? null;
+    return row?.meta_value ?? 0;
   },
 
   updateLastProcessedMatch(matchId, scope = SCOPE.GLOBAL) {
@@ -121,7 +121,7 @@ const EloRepo = (db) => ({
         VALUES ('last_processed_match', ?, ?)
         ON CONFLICT(meta_key, scope)
             DO UPDATE SET meta_value = excluded.meta_value
-    `).run(matchId, scope);
+    `).run(String(matchId), scope);
   },
 
   logEloChange({

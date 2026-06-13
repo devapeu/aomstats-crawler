@@ -5,23 +5,35 @@ jest.mock("../database", () => ({
   },
 }));
 
-jest.mock('../models/playerMatches', () => ({
-  PlayerMatchesRepo: jest.fn(() => ({
+jest.mock('../models/playerMatches', () => {
+  const mockPlayerMatchesRepo = {
     getPlayerWins: jest.fn(),
     getPlayerRelationshipWins: jest.fn(),
-  }) )
-}));
+  };
 
-jest.mock('../models/elo', () => ({
-  EloRepo: {
+  return {
+    PlayerMatchesRepo: Object.assign(jest.fn(() => mockPlayerMatchesRepo), mockPlayerMatchesRepo),
+  };
+});
+
+jest.mock('../models/elo', () => {
+  const mockEloRepo = {
+    getElo: jest.fn(),
     getManyElo: jest.fn(),
-  }
-}));
+  };
+
+  return {
+    EloRepo: Object.assign(jest.fn(() => mockEloRepo), mockEloRepo),
+    SCOPE: { GLOBAL: 'global', GOD: 'god', CIV: 'civ' },
+  };
+});
 
 jest.mock('../config/eloConfig', () => ({
   ELO_SIZE_ADVANTAGE_PER_PLAYER: 250,
   WIN_PROB_SIZE_MULTIPLIER_BASE: 1.2,
   ELO_DIVISOR: 400,
+  ELO_BETA_FACTOR: 0,
+  ELO_SCALE: 20,
 }));
 
 const { PlayerMatchesRepo } = require('../models/playerMatches');
@@ -36,10 +48,10 @@ describe('MatchupService.getMatchupScore', () => {
 
   it('calculates matchup wins correctly', () => {
     PlayerMatchesRepo.getPlayerWins.mockReturnValue([
-      { win: 1 },
-      { win: 1 },
-      { win: 0 },
-      { win: 1 },
+      { target_player_win: 1, players: '[]' },
+      { target_player_win: 1, players: '[]' },
+      { target_player_win: 0, players: '[]' },
+      { target_player_win: 1, players: '[]' },
     ]);
 
     const result = MatchupService.getMatchupScore(
@@ -54,15 +66,15 @@ describe('MatchupService.getMatchupScore', () => {
         { scope: 'global' }
       );
 
-    expect(result).toEqual([3, 1]);
+    expect(result.score).toEqual([3, 1]);
   });
 
   it('accepts god name in player data', () => {
     PlayerMatchesRepo.getPlayerWins.mockReturnValue([
-      { win: 1 },
-      { win: 1 },
-      { win: 0 },
-      { win: 1 },
+      { target_player_win: 1, players: '[]' },
+      { target_player_win: 1, players: '[]' },
+      { target_player_win: 0, players: '[]' },
+      { target_player_win: 1, players: '[]' },
     ]);
 
     const result = MatchupService.getMatchupScore(
@@ -72,12 +84,12 @@ describe('MatchupService.getMatchupScore', () => {
 
     expect(PlayerMatchesRepo.getPlayerWins)
       .toHaveBeenCalledWith(
-        '101[hades],102[zeus] vs 103[poseidon],104[thor]',
+        '101,102 vs 103,104',
         102,
-        { scope: 'god' }
+        { scope: 'global' }
       );
 
-    expect(result).toEqual([3, 1]);
+    expect(result.score).toEqual([3, 1]);
 
   })
 
@@ -89,7 +101,7 @@ describe('MatchupService.getMatchupScore', () => {
       [{profile_id: 103}, {profile_id: 104}],
     );
 
-    expect(result).toEqual([0, 0]);
+    expect(result.score).toEqual([0, 0]);
   });
 });
 
@@ -99,16 +111,14 @@ describe('MatchupService.getMatchupOdds', () => {
   });
 
   it('returns probability favoring stronger Elo team', () => {
-    EloRepo.getManyElo.mockReturnValue([
-      { profile_id: 1, elo: 1800 },
-      { profile_id: 2, elo: 1750 },
-      { profile_id: 3, elo: 1400 },
-      { profile_id: 4, elo: 1450 },
-    ]);
+    EloRepo.getElo.mockImplementation((profileId) => ({
+      1: 1800,
+      2: 1750,
+      3: 1400,
+      4: 1450,
+    }[profileId]));
 
-    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue({
-      players: {}
-    });
+    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue([]);
 
     const result = MatchupService.getMatchupOdds(
       [{ profile_id: 1 }, { profile_id: 2 }],
@@ -119,19 +129,14 @@ describe('MatchupService.getMatchupOdds', () => {
   });
 
   it('uses historical matchup data when available', () => {
-    EloRepo.getManyElo.mockReturnValue([
-      { profile_id: 1, elo: 1500 },
-      { profile_id: 2, elo: 1500 },
-    ]);
+    EloRepo.getElo.mockImplementation((profileId) => ({
+      1: 1500,
+      2: 1500,
+    }[profileId]));
 
-    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue({
-      players: {
-        2: {
-          wins: 8,
-          total: 10,
-        }
-      }
-    });
+    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue([
+      { profile_id: 2, wins: 8, total: 10 },
+    ]);
 
     const result = MatchupService.getMatchupOdds(
       [{ profile_id: 1 }],
@@ -142,14 +147,12 @@ describe('MatchupService.getMatchupOdds', () => {
   });
 
   it('falls back to Elo-only probability without historical data', () => {
-    EloRepo.getManyElo.mockReturnValue([
-      { profile_id: 1, elo: 1600 },
-      { profile_id: 2, elo: 1400 },
-    ]);
+    EloRepo.getElo.mockImplementation((profileId) => ({
+      1: 1600,
+      2: 1400,
+    }[profileId]));
 
-    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue({
-      players: {}
-    });
+    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue([]);
 
     const result = MatchupService.getMatchupOdds(
       [{ profile_id: 1 }],
@@ -160,14 +163,12 @@ describe('MatchupService.getMatchupOdds', () => {
   });
 
   it('handles equal Elo teams near 50 percent', () => {
-    EloRepo.getManyElo.mockReturnValue([
-      { profile_id: 1, elo: 1500 },
-      { profile_id: 2, elo: 1500 },
-    ]);
+    EloRepo.getElo.mockImplementation((profileId) => ({
+      1: 1500,
+      2: 1500,
+    }[profileId]));
 
-    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue({
-      players: {}
-    });
+    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue([]);
 
     const result = MatchupService.getMatchupOdds(
       [{ profile_id: 1 }],
@@ -178,15 +179,13 @@ describe('MatchupService.getMatchupOdds', () => {
   });
 
   it('applies team size advantage', () => {
-    EloRepo.getManyElo.mockReturnValue([
-      { profile_id: 1, elo: 1500 },
-      { profile_id: 2, elo: 1500 },
-      { profile_id: 3, elo: 1500 },
-    ]);
+    EloRepo.getElo.mockImplementation((profileId) => ({
+      1: 1500,
+      2: 1500,
+      3: 1500,
+    }[profileId]));
 
-    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue({
-      players: {}
-    });
+    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue([]);
 
     const result = MatchupService.getMatchupOdds(
       [{ profile_id: 1 }, { profile_id: 2 }],
@@ -197,19 +196,14 @@ describe('MatchupService.getMatchupOdds', () => {
   });
 
   it('never exceeds probability bounds', () => {
-    EloRepo.getManyElo.mockReturnValue([
-      { profile_id: 1, elo: 3000 },
-      { profile_id: 2, elo: 500 },
-    ]);
+    EloRepo.getElo.mockImplementation((profileId) => ({
+      1: 3000,
+      2: 500,
+    }[profileId]));
 
-    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue({
-      players: {
-        2: {
-          wins: 100,
-          total: 100,
-        }
-      }
-    });
+    PlayerMatchesRepo.getPlayerRelationshipWins.mockReturnValue([
+      { profile_id: 2, wins: 100, total: 100 },
+    ]);
 
     const result = MatchupService.getMatchupOdds(
       [{ profile_id: 1 }],

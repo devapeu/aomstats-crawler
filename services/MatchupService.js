@@ -2,7 +2,6 @@ const {
   WIN_PROB_SIZE_MULTIPLIER_BASE,
 } = require('../config/eloConfig');
 
-const { EloRepo } = require('../models/elo');
 const { PlayerMatchesRepo } = require("../models/playerMatches");
 const { db } = require("../database");
 

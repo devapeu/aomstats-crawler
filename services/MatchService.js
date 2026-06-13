@@ -140,8 +140,8 @@ const MatchService = {
         }));
     },
 
-    getMatchesByDuration({ limit = 3 } = {}) {
-        const { shortest, longest } = PlayerMatches.getMatchesByDuration(limit);
+    getMatchesByDuration({ limit = 5, team_games_only = true } = {}) {
+        const { shortest, longest } = PlayerMatches.getMatchesByDuration(limit, team_games_only);
 
         const parse = rows => rows.map(r => ({ ...r, players: JSON.parse(r.players) }));
 

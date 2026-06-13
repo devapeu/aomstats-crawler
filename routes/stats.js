@@ -19,7 +19,8 @@ router.get('/upsets', (req, res) => {
 });
 
 router.get('/matches/duration', (req, res) => {
-  const { shortest, longest } = MatchService.getMatchesByDuration({ limit: 3 });
+  const team_games_only = Object.hasOwn(req.query, "team_games_only");
+  const { shortest, longest } = MatchService.getMatchesByDuration({ limit: 5, team_games_only: team_games_only });
   res.json({ shortest, longest });
 });
 

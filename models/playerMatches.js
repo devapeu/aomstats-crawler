@@ -236,7 +236,12 @@ const PlayerMatchesRepo = (db) => ({
         LIMIT ?
     `).all(limit);
   },
-  getMatchesByDuration(limit = 3) {
+  getMatchesByDuration(limit = 3, team_games_only = false ) {
+    const playerCountFilter =
+      team_games_only ?
+        'HAVING COUNT(pm.profile_id) >= 4' :
+        'HAVING COUNT(pm.profile_id) = 2';
+
     const base = `
         SELECT
             m.match_id,
@@ -253,8 +258,9 @@ const PlayerMatchesRepo = (db) => ({
         FROM matches m
         JOIN player_matches pm ON pm.match_id = m.match_id
         JOIN players p ON p.profile_id = pm.profile_id
-        WHERE m.duration IS NOT NULL AND m.duration > 0
+        WHERE m.duration IS NOT NULL AND m.duration > 0 AND m.mapname NOT LIKE '_unknown%'
         GROUP BY m.match_id
+        ${playerCountFilter}
     `;
 
     return {

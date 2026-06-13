@@ -105,7 +105,28 @@ const MatchService = {
     getLatestDate() {
         const row = db.prepare(`SELECT MAX(startgametime) as latest FROM matches`).get();
         return row?.latest ?? 0;
-    }
+    },
+
+    getTopUpsets(limit = 10) {
+        const rows = PlayerMatches.getTopUpsets(limit);
+
+        return rows.map(r => ({
+            ...r,
+            winners: JSON.parse(r.winners),
+            losers: JSON.parse(r.losers),
+        }));
+    },
+
+    getMatchesByDuration({ limit = 3 } = {}) {
+        const { shortest, longest } = PlayerMatches.getMatchesByDuration(limit);
+
+        const parse = rows => rows.map(r => ({ ...r, players: JSON.parse(r.players) }));
+
+        return {
+            shortest: parse(shortest),
+            longest: parse(longest),
+        };
+    },
 }
 
 module.exports = {

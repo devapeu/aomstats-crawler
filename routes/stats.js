@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../database');
 const { exportAsCSV } = require('../services/export_csv');
+const { MatchService } = require('../services/MatchService');
 
 router.get('/stats', (req, res) => {
   // Maps
@@ -58,6 +59,16 @@ router.get('/stats', (req, res) => {
 
   res.json({ maps, elo, matchups: filteredMatchups })
 })
+
+router.get('/upsets', (req, res) => {
+  const upsets = MatchService.getTopUpsets(10);
+  res.json({ upsets });
+});
+
+router.get('/matches/duration', (req, res) => {
+  const { shortest, longest } = MatchService.getMatchesByDuration({ limit: 3 });
+  res.json({ shortest, longest });
+});
 
 router.get('/matches.csv', (req, res) => {
   const csv = exportAsCSV();

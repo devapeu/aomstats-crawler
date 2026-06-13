@@ -194,6 +194,74 @@ const PlayerMatchesRepo = (db) => ({
 
     return streak;
   },
+  getTopUpsets(limit = 10) {
+    return db.prepare(`
+        WITH team_elos AS (
+            SELECT
+                pm.match_id,
+                pm.win,
+                COUNT(*)          AS player_count,
+                AVG(peh.old_elo)  AS avg_elo,
+                json_group_array(json_object(
+                    'profile_id', pm.profile_id,
+                    'name', p.name,
+                    'god', pm.god,
+                    'elo', ROUND(peh.old_elo, 0)
+                )) AS players
+            FROM player_matches pm
+            JOIN player_elo_history peh
+                ON peh.match_id = pm.match_id
+                AND peh.profile_id = pm.profile_id
+                AND peh.scope_type = 'global'
+                AND peh.scope_key = ''
+            JOIN players p ON p.profile_id = pm.profile_id
+            GROUP BY pm.match_id, pm.win
+        )
+        SELECT
+            m.match_id,
+            m.startgametime,
+            m.mapname,
+            m.duration,
+            ROUND(w.avg_elo, 0) AS winner_avg_elo,
+            ROUND(l.avg_elo, 0) AS loser_avg_elo,
+            ROUND(l.avg_elo - w.avg_elo, 0) AS elo_diff,
+            w.players AS winners,
+            l.players AS losers
+        FROM team_elos w
+        JOIN team_elos l ON w.match_id = l.match_id AND w.win = 1 AND l.win = 0
+        JOIN matches m ON m.match_id = w.match_id
+        WHERE l.avg_elo > w.avg_elo
+          AND w.player_count = l.player_count
+        ORDER BY elo_diff DESC
+        LIMIT ?
+    `).all(limit);
+  },
+  getMatchesByDuration(limit = 3) {
+    const base = `
+        SELECT
+            m.match_id,
+            m.duration,
+            m.mapname,
+            m.startgametime,
+            json_group_array(json_object(
+                'profile_id', pm.profile_id,
+                'name', p.name,
+                'god', pm.god,
+                'win', pm.win,
+                'team', pm.team
+            )) AS players
+        FROM matches m
+        JOIN player_matches pm ON pm.match_id = m.match_id
+        JOIN players p ON p.profile_id = pm.profile_id
+        WHERE m.duration IS NOT NULL AND m.duration > 0
+        GROUP BY m.match_id
+    `;
+
+    return {
+      shortest: db.prepare(`${base} ORDER BY m.duration ASC LIMIT ?`).all(limit),
+      longest: db.prepare(`${base} ORDER BY m.duration DESC LIMIT ?`).all(limit),
+    };
+  },
   getManyMatchesWithPlayers(after = 0) {
     return db.prepare(`
         SELECT pm.match_id,

@@ -194,7 +194,7 @@ const PlayerMatchesRepo = (db) => ({
 
     return streak;
   },
-  getTopUpsets(limit = 10) {
+  getTopUpsets(limit = 10, after = 0) {
     return db.prepare(`
         WITH team_elos AS (
             SELECT
@@ -212,8 +212,7 @@ const PlayerMatchesRepo = (db) => ({
             JOIN player_elo_history peh
                 ON peh.match_id = pm.match_id
                 AND peh.profile_id = pm.profile_id
-                AND peh.scope_type = 'global'
-                AND peh.scope_key = ''
+                AND peh.scope_type = 'god'
             JOIN players p ON p.profile_id = pm.profile_id
             GROUP BY pm.match_id, pm.win
         )
@@ -232,9 +231,10 @@ const PlayerMatchesRepo = (db) => ({
         JOIN matches m ON m.match_id = w.match_id
         WHERE l.avg_elo > w.avg_elo
           AND w.player_count = l.player_count
+          AND m.startgametime > ?
         ORDER BY elo_diff DESC
         LIMIT ?
-    `).all(limit);
+    `).all(after, limit);
   },
   getMatchesByDuration(limit = 3, team_games_only = false ) {
     const playerCountFilter =

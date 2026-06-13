@@ -14,7 +14,8 @@ router.get('/maps', (req, res) => {
 });
 
 router.get('/upsets', (req, res) => {
-  const upsets = MatchService.getTopUpsets(10);
+  const after = req.query.after ?? 0;
+  const upsets = MatchService.getTopUpsets(10, after);
   res.json({ upsets });
 });
 

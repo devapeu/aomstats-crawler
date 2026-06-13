@@ -130,8 +130,8 @@ const MatchService = {
         return matchups;
     },
 
-    getTopUpsets(limit = 10) {
-        const rows = PlayerMatches.getTopUpsets(limit);
+    getTopUpsets(limit = 10, after = 0) {
+        const rows = PlayerMatches.getTopUpsets(limit, after);
 
         return rows.map(r => ({
             ...r,

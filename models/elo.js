@@ -155,7 +155,7 @@ const EloRepo = (db) => ({
     );
   },
 
-  getEloHistory(profile_id) {
+  getEloHistory(profile_id, after = 0) {
     return db.prepare(`
         SELECT p.name,
                e.scope_key AS god,
@@ -169,6 +169,7 @@ const EloRepo = (db) => ({
                       ON e.profile_id = p.profile_id
         WHERE e.scope_type = 'god'
           AND e.profile_id = ?
+          AND m.startgametime > ?
           AND EXISTS (SELECT 1
                       FROM player_matches pm
                       WHERE pm.profile_id = e.profile_id
@@ -177,7 +178,7 @@ const EloRepo = (db) => ({
                       HAVING COUNT(*) >= 9)
         ORDER BY e.profile_id,
                  m.startgametime;
-    `).all(profile_id);
+    `).all(profile_id, after);
   }
 });
 

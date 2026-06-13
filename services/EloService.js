@@ -157,8 +157,8 @@ const EloService = {
 
     return 1 / (1 + Math.pow(10, (adjustedTeam2Elo - adjustedTeam1Elo) / ELO_SCALE));;
   },
-  getEloHistory(profileId, scopeType, scopeKey = "") {
-    return Elo.getEloHistory(profileId, scopeType, scopeKey);
+  getEloHistory(profileId, after = 0) {
+    return Elo.getEloHistory(profileId, after);
   }
 };
 

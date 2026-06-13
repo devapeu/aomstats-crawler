@@ -143,7 +143,8 @@ router.get('/elos/:profile_id', (req, res) => {
 
 router.get('/elo-history/:profile_id', (req, res) => {
   const profileId = parseInt(req.params.profile_id);
-  const rows = EloService.getEloHistory(profileId);
+  const after = req.query.after ?? 0;
+  const rows = EloService.getEloHistory(profileId, after);
 
   if (!rows.length) {
     return res.json({ message: 'No data found for this player' });

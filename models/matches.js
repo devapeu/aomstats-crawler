@@ -33,6 +33,29 @@ const MatchesRepo = (db) => ({
 
     tx(rows);
   },
+  getTopMaps(limit = 10) {
+    return db.prepare(`
+      SELECT
+        COUNT(DISTINCT match_id) AS count,
+        mapname
+      FROM matches
+      WHERE mapname LIKE 'rm_%'
+      GROUP BY mapname
+      ORDER BY count DESC
+      LIMIT ?
+    `).all(limit);
+  },
+  getTopMatchups(limit = 20) {
+    return db.prepare(`
+      SELECT
+        COUNT(DISTINCT match_id) AS count,
+        team_match_id
+      FROM matches
+      GROUP BY team_match_id
+      ORDER BY count DESC
+      LIMIT ?
+    `).all(limit);
+  },
 });
 
 module.exports = {

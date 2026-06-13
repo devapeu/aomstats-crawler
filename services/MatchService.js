@@ -107,6 +107,29 @@ const MatchService = {
         return row?.latest ?? 0;
     },
 
+    getTopMaps(limit = 10) {
+        return Matches.getTopMaps(limit);
+    },
+
+    getTopMatchups(limit = 20) {
+        const rows = Matches.getTopMatchups(limit);
+
+        const matchups = [];
+        for (const row of rows) {
+            const [t1, t2] = row.team_match_id.split(" vs ").map(t => t.split(","));
+            if ((t1.length === 1 && t2.length === 1) || t1[0] === " ") continue;
+
+            matchups.push({
+                team_match_id: row.team_match_id,
+                count: row.count,
+                team1: t1,
+                team2: t2,
+            });
+        }
+
+        return matchups;
+    },
+
     getTopUpsets(limit = 10) {
         const rows = PlayerMatches.getTopUpsets(limit);
 

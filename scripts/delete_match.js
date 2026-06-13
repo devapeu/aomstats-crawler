@@ -14,11 +14,13 @@ if (!match_id) {
   process.exit(1);
 }
 
-const stmt = db.prepare(`
-  DELETE FROM matches
-  WHERE match_id = ?
-`);
+const tx = db.transaction((match_id) => {
+  db.prepare(`DELETE FROM player_matches WHERE match_id = ?`).run(match_id);
+  db.prepare(`DELETE FROM player_elo_history WHERE match_id = ?`).run(match_id);
+  db.prepare(`DELETE FROM main.tournament_matches WHERE match_id = ?`).run(match_id);
+  db.prepare(`DELETE FROM matches WHERE match_id = ?`).run(match_id);
+});
 
-stmt.run(match_id);
+tx(match_id);
 
 console.log(`Deleted match ${match_id} successfully.`);

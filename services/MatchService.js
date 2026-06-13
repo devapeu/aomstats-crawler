@@ -119,11 +119,21 @@ const MatchService = {
             const [t1, t2] = row.team_match_id.split(" vs ").map(t => t.split(","));
             if ((t1.length === 1 && t2.length === 1) || t1[0] === " ") continue;
 
+            const results = PlayerMatches.getPlayerWins(row.team_match_id, t1[0], { scope: 'global' });
+
+            let team1Wins = 0;
+            let team2Wins = 0;
+            for (const r of results) {
+                if (r.target_player_win === 1) team1Wins++;
+                else team2Wins++;
+            }
+
             matchups.push({
                 team_match_id: row.team_match_id,
                 count: row.count,
                 team1: t1,
                 team2: t2,
+                score: [team1Wins, team2Wins],
             });
         }
 

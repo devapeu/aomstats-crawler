@@ -150,6 +150,15 @@ const MatchService = {
         }));
     },
 
+    getLatestMatches(options = {}) {
+        const rows = PlayerMatches.getLatestMatches(options);
+
+        return rows.map(r => ({
+            ...r,
+            players: JSON.parse(r.players).sort((a, b) => b.win - a.win),
+        }));
+    },
+
     getMatchesByDuration({ limit = 5, team_games_only = true } = {}) {
         const { shortest, longest } = PlayerMatches.getMatchesByDuration(limit, team_games_only);
 

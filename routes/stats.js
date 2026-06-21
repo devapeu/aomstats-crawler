@@ -19,6 +19,18 @@ router.get('/upsets', (req, res) => {
   res.json({ upsets });
 });
 
+router.get('/matches', (req, res) => {
+  const after = req.query.after ? Number(req.query.after) : null;
+  const before = req.query.before ? Number(req.query.before) : null;
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
+  const team_games_only = Object.hasOwn(req.query, "team_games_only");
+  const map = req.query.map ?? null;
+  const god = req.query.god ?? null;
+
+  const matches = MatchService.getLatestMatches({ after, before, limit, team_games_only, map, god });
+  res.json({ matches });
+});
+
 router.get('/matches/duration', (req, res) => {
   const team_games_only = Object.hasOwn(req.query, "team_games_only");
   const { shortest, longest } = MatchService.getMatchesByDuration({ limit: 5, team_games_only: team_games_only });

@@ -9,7 +9,8 @@ router.get('/matchups', (req, res) => {
 });
 
 router.get('/maps', (req, res) => {
-  const maps = MatchService.getTopMaps(10);
+  const limit = Math.min(Number(req.query.limit) || 10, 100);
+  const maps = MatchService.getTopMaps(limit);
   res.json({ maps });
 });
 
@@ -17,6 +18,22 @@ router.get('/upsets', (req, res) => {
   const after = req.query.after ?? 0;
   const upsets = MatchService.getTopUpsets(10, after);
   res.json({ upsets });
+});
+
+router.get('/matches', (req, res) => {
+  const after = req.query.after ? Number(req.query.after) : null;
+  const before = req.query.before ? Number(req.query.before) : null;
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
+  const team_games_only = Object.hasOwn(req.query, "team_games_only");
+  const map = req.query.map ?? null;
+  const god = req.query.god ?? null;
+  const players = req.query.players
+    ? req.query.players.split(',').map(Number)
+    : null;
+  const players_match_all = Object.hasOwn(req.query, "players_match_all");
+
+  const matches = MatchService.getLatestMatches({ after, before, limit, team_games_only, map, god, players, players_match_all });
+  res.json({ matches });
 });
 
 router.get('/matches/duration', (req, res) => {

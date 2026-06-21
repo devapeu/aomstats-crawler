@@ -268,6 +268,78 @@ const PlayerMatchesRepo = (db) => ({
       longest: db.prepare(`${base} ORDER BY m.duration DESC LIMIT ?`).all(limit),
     };
   },
+  getLatestMatches({ after = null, before = null, limit = 20, team_games_only = false, map = null, god = null, players = null, players_match_all = false } = {}) {
+    const playerCountFilter =
+      team_games_only ?
+        'HAVING COUNT(pm.profile_id) >= 4' :
+        'HAVING COUNT(pm.profile_id) = 2';
+
+    const conditions = [];
+    const params = [];
+
+    if (after !== null) {
+      conditions.push('m.startgametime > ?');
+      params.push(after);
+    }
+
+    if (before !== null) {
+      conditions.push('m.startgametime < ?');
+      params.push(before);
+    }
+
+    if (map !== null) {
+      conditions.push('m.mapname = ?');
+      params.push(map);
+    }
+
+    if (god !== null) {
+      conditions.push('EXISTS (SELECT 1 FROM player_matches pmg WHERE pmg.match_id = m.match_id AND pmg.god = ?)');
+      params.push(god);
+    }
+
+    if (Array.isArray(players) && players.length > 0) {
+      if (players_match_all) {
+        for (const profileId of players) {
+          conditions.push('EXISTS (SELECT 1 FROM player_matches pmp WHERE pmp.match_id = m.match_id AND pmp.profile_id = ?)');
+          params.push(profileId);
+        }
+      } else {
+        const placeholders = players.map(() => '?').join(',');
+        conditions.push(`EXISTS (SELECT 1 FROM player_matches pmp WHERE pmp.match_id = m.match_id AND pmp.profile_id IN (${placeholders}))`);
+        params.push(...players);
+      }
+    }
+
+    const whereClause = conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';
+
+    const query = `
+        SELECT
+            m.match_id,
+            m.duration,
+            m.mapname,
+            m.startgametime,
+            json_group_array(json_object(
+                'profile_id', pm.profile_id,
+                'name', p.name,
+                'god', pm.god,
+                'win', pm.win,
+                'team', pm.team
+            )) AS players
+        FROM matches m
+        JOIN player_matches pm ON pm.match_id = m.match_id
+        JOIN players p ON p.profile_id = pm.profile_id
+        WHERE m.duration IS NOT NULL AND m.duration > 0 AND m.mapname NOT LIKE '_unknown%'
+            ${whereClause}
+        GROUP BY m.match_id
+        ${playerCountFilter}
+        ORDER BY m.startgametime DESC
+        LIMIT ?
+    `;
+
+    params.push(limit);
+
+    return db.prepare(query).all(...params);
+  },
   getManyMatchesWithPlayers(after = 0) {
     return db.prepare(`
         SELECT pm.match_id,

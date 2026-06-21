@@ -26,8 +26,12 @@ router.get('/matches', (req, res) => {
   const team_games_only = Object.hasOwn(req.query, "team_games_only");
   const map = req.query.map ?? null;
   const god = req.query.god ?? null;
+  const players = req.query.players
+    ? req.query.players.split(',').map(Number)
+    : null;
+  const players_match_all = Object.hasOwn(req.query, "players_match_all");
 
-  const matches = MatchService.getLatestMatches({ after, before, limit, team_games_only, map, god });
+  const matches = MatchService.getLatestMatches({ after, before, limit, team_games_only, map, god, players, players_match_all });
   res.json({ matches });
 });
 

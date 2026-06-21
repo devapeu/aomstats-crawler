@@ -268,7 +268,7 @@ const PlayerMatchesRepo = (db) => ({
       longest: db.prepare(`${base} ORDER BY m.duration DESC LIMIT ?`).all(limit),
     };
   },
-  getLatestMatches({ after = null, before = null, limit = 20, team_games_only = false, map = null, god = null } = {}) {
+  getLatestMatches({ after = null, before = null, limit = 20, team_games_only = false, map = null, god = null, players = null, players_match_all = false } = {}) {
     const playerCountFilter =
       team_games_only ?
         'HAVING COUNT(pm.profile_id) >= 4' :
@@ -295,6 +295,19 @@ const PlayerMatchesRepo = (db) => ({
     if (god !== null) {
       conditions.push('EXISTS (SELECT 1 FROM player_matches pmg WHERE pmg.match_id = m.match_id AND pmg.god = ?)');
       params.push(god);
+    }
+
+    if (Array.isArray(players) && players.length > 0) {
+      if (players_match_all) {
+        for (const profileId of players) {
+          conditions.push('EXISTS (SELECT 1 FROM player_matches pmp WHERE pmp.match_id = m.match_id AND pmp.profile_id = ?)');
+          params.push(profileId);
+        }
+      } else {
+        const placeholders = players.map(() => '?').join(',');
+        conditions.push(`EXISTS (SELECT 1 FROM player_matches pmp WHERE pmp.match_id = m.match_id AND pmp.profile_id IN (${placeholders}))`);
+        params.push(...players);
+      }
     }
 
     const whereClause = conditions.length > 0 ? `AND ${conditions.join(' AND ')}` : '';

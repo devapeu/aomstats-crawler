@@ -9,7 +9,8 @@ router.get('/matchups', (req, res) => {
 });
 
 router.get('/maps', (req, res) => {
-  const maps = MatchService.getTopMaps(10);
+  const limit = Math.min(Number(req.query.limit) || 10, 100);
+  const maps = MatchService.getTopMaps(limit);
   res.json({ maps });
 });
 

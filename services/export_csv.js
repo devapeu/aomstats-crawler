@@ -32,7 +32,7 @@ function exportAsCSV() {
                  JOIN players p
                       ON p.profile_id = pm.profile_id
         GROUP BY m.match_id
-        ORDER BY m.match_id
+        ORDER BY m.startgametime
     `);
 
     const rows = stmt.all();

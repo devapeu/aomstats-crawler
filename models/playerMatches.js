@@ -183,7 +183,7 @@ const PlayerMatchesRepo = (db) => ({
         SELECT win
         FROM player_matches
         WHERE profile_id = ?
-        ORDER BY match_id DESC
+        ORDER BY startgametime DESC
     `).all(profileId);
 
     let streak = 0;
